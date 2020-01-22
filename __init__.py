@@ -27,7 +27,7 @@ _ADD_DRIVER_TYPE_NEW_ARMATRUE = "New"
 _ADD_DRIVER_TYPE_SPECIFIC = "Specific"
 _CONSTRAINTS_NAME_STRETCH_TO = "Stretch to bendy bone(Auto)"
 _DRIVER_HANDLE_LOC_OFFSET = 0.25
-_TRANSMITTER_CONSTRAINTS_NAME = "Copy Transforms(Transmitter for driver bone)" 
+_TRANSMITTER_CONSTRAINTS_NAME = "Copy Transforms(Transmitter for driver bone)"
 _RENAME_BONES_INCREMENTAL_TYPE_NONE = "None"
 _RENAME_BONES_INCREMENTAL_TYPE_ALPHA = "Alphabet"
 _RENAME_BONES_INCREMENTAL_TYPE_NUMBER = "Number"
@@ -42,10 +42,10 @@ _RENAME_BONES_ALPHABET_CASE_LOWER = common.LETTERS_CASE_TYPE_LOWER
 
 
 class DriverHandleBoneInfo:
-    
+
     INOUT_TYPE_IN = "in"
     INOUT_TYPE_OUT = "out"
-    
+
     name = ""
     align_roll_vec = None
     head_vec = None
@@ -59,34 +59,34 @@ class DriverHandleBoneInfo:
     bone_thin = 0.0
     driver_target_nm = ""
     inout_type = ""
-    
+
 #########################################################
 # Properties
 #########################################################
 
 
 def _updateRenameXAxisMirror(self, context):
-    
+
     propgrp = self
 
     if not propgrp.rename_bones_is_mirror:
         return
-    
+
     bones = context.active_object.pose.bones
     expNameList = []
     for item in propgrp.rename_bones_grp:
         if item.name not in bones.keys():
             continue
-        
+
         if item.name in expNameList:
             continue
-        
+
         bone = bones[item.name]
         elm = common.getNameElements(bone)
         if elm.mirror_bonename in bones.keys():
             propgrp.rename_bones_grp.remove(item.idx)
             expNameList.append(elm.mirror_bonename)
-    
+
             _reNumberPropIdx(context)
 
 
@@ -152,10 +152,10 @@ class SetupBendyBoneProperties(bpy.types.PropertyGroup):
 
     # Bendy bone properties(posebone)
     constraints_bulge = bpy.props.FloatProperty(name="constraints_bulge", description='"Stretch to" constraints volume value.volume="1.0":If bbone squashed,inflate/"0.0":not inflate', default=0.0, step=0.1, subtype="NONE")
-    
+
     # Bendy bone pose properties
     is_insert_keyframes = bpy.props.BoolProperty(name="is_insert_keyframes", description="Insert keyframes of bbones curve after confirm.", default=False, subtype="NONE")
-    
+
     # For rename bones properties
     rename_bones_grp = bpy.props.CollectionProperty(type=RenameBoneItemsPropGrp)
     rename_bones_grp_idx = bpy.props.IntProperty()
@@ -173,13 +173,13 @@ class SetupBendyBoneProperties(bpy.types.PropertyGroup):
     rename_bones_letters_case_type_id.append((_RENAME_BONES_ALPHABET_CASE_UPPER, _RENAME_BONES_ALPHABET_CASE_UPPER, "Uppercase alphabets.", "", 0))
     rename_bones_letters_case_type_id.append((_RENAME_BONES_ALPHABET_CASE_LOWER, _RENAME_BONES_ALPHABET_CASE_LOWER, "Lowercase alphabets.", "", 1))
     rename_bones_letters_case_type = bpy.props.EnumProperty(items=rename_bones_letters_case_type_id, default=_RENAME_BONES_ALPHABET_CASE_UPPER)
-    
-    
+
+
 def _defProperties():
 
     # Define Addon's Properties
     bpy.types.WindowManager.uil_setup_bendy_bone_auto_propgrp = bpy.props.PointerProperty(type=SetupBendyBoneProperties)
-    
+
 
 #########################################################
 # Functions(Private)
@@ -187,17 +187,17 @@ def _defProperties():
 
 
 def _getSelectedPoseBones(pbones, isMirror):
-    
+
     ret = {}
-    
+
     if not pbones:
         return ret
 
     for bone in pbones:
-        
+
         if not common.isVisiblePoseBone(bone):
             continue
-        
+
         if bone.bone.select:
             elm = common.getNameElements(bone)
             ret[bone] = elm
@@ -215,17 +215,17 @@ def _getSelectedPoseBones(pbones, isMirror):
 
 
 def _getSelectedEditableBones(editbones, isMirror):
-    
+
     ret = {}
-    
+
     if not editbones:
         return ret
 
     for bone in editbones:
-        
+
         if not common.isVisibleBone(bone):
             continue
-        
+
         if bone.select or bone.select_head or bone.select_tail:
             elm = common.getNameElements(bone)
             ret[bone] = elm
@@ -243,25 +243,25 @@ def _getSelectedEditableBones(editbones, isMirror):
 
 
 class TempParentHandle:
-    
+
     TYPE_HEAD_2_TAIL = 2
     TYPE_TAIL_2_HEAD = 3
-    
+
     bone = None
     type = -1
-    
+
     def __init__(self, bone, type):
         self.bone = bone
         self.type = type
 
 
 def _getDirectionVector(editbone):
-    
+
     headVec = editbone.head.copy()
     tailVec = editbone.tail.copy()
     dVech2t = tailVec - headVec
     dVect2h = headVec - tailVec
-    
+
     return (headVec, tailVec, dVech2t, dVect2h)
 
 
@@ -277,38 +277,38 @@ class SetupBendyBoneAuto(bpy.types.Operator):
     bl_idname = "uiler.setupbendyboneauto"
     bl_label = "Setup Bendy Bone"
     bl_options = {'REGISTER', 'UNDO'}
-    
+
     _const_temp = {}  # key:bone value:constraints
     _base_vec_map = {}  # key:Vector(head/tail) value:(basebone(with head), basebone(with tail), handle bone collection(head), handle bone collection(tail))
     _init_Armature = None
     _drv_target_Armature = None
     _new_Armature = None
-    
+
     def _clearMyConstraints(self):
-        
+
         for bone in self._const_temp.keys():
             bone.constraints.remove(self._const_temp[bone])
-        
+
         self._const_temp = {}
-    
+
     def _constructHandleBoneName(self, elm, hdl_id, end_id):
-        
+
         ret = ""
         sep = "_"
         # lr_id = elm.lr_id
         # num = elm.numid
         isPrefix = elm.isPrefix
         # isSuffix = elm.isSuffix
-        
+
         if isPrefix:
             ret = elm.bonename + sep + hdl_id + sep + end_id
         else:  # Suffix
             ret = hdl_id + sep + end_id + sep + elm.bonename
-        
+
         return ret
 
     def _constructDriverHandleBoneName(self, elm, hdl_id, drv_id):
-        
+
         ret = ""
         sep = "_"
         # lr_id = elm.lr_id
@@ -319,11 +319,11 @@ class SetupBendyBoneAuto(bpy.types.Operator):
             ret = elm.bonename + sep + hdl_id + sep + drv_id
         else:  # Suffix
             ret = hdl_id + sep + drv_id + sep + elm.bonename
-        
+
         return ret
-    
+
     def _default2Active(self, propgrp, editbone):
-        
+
         propgrp.bbone_scale_ratio = editbone.bbone_x * editbone.length
         propgrp.segments = editbone.bbone_segments
         propgrp.curve_in_x = editbone.bbone_curveinx
@@ -336,9 +336,9 @@ class SetupBendyBoneAuto(bpy.types.Operator):
         propgrp.roll_out = editbone.bbone_rollout
         propgrp.ease_in = editbone.bbone_in
         propgrp.ease_out = editbone.bbone_out
-    
+
     def _addParentHandles(self, context):
-        
+
         map = self._base_vec_map
         editbones = context.active_object.data.edit_bones
 
@@ -351,12 +351,12 @@ class SetupBendyBoneAuto(bpy.types.Operator):
                 spec_parent_bone = editbones[spec_parent_bone_nm]
 
         for keyVec in map.keys():
-            
+
             baseHList = sorted(map[keyVec][0])
             baseTList = sorted(map[keyVec][1])
             hdlHList = sorted(map[keyVec][2])
             hdlTList = sorted(map[keyVec][3])
-            
+
             baseA = None
             if len(baseHList) > 0:
                 baseA = TempParentHandle(editbones[baseHList[0]], TempParentHandle.TYPE_TAIL_2_HEAD)
@@ -364,19 +364,19 @@ class SetupBendyBoneAuto(bpy.types.Operator):
             if len(baseTList) > 0:
                 baseB = TempParentHandle(editbones[baseTList[0]], TempParentHandle.TYPE_HEAD_2_TAIL)
             hdlH = None
-            
+
             if not baseA and len(baseTList) > 1:
                 baseA = TempParentHandle(editbones[baseTList[1]], TempParentHandle.TYPE_HEAD_2_TAIL)
-            
+
             if not baseB and len(baseHList) > 1:
                 baseB = TempParentHandle(editbones[baseHList[1]], TempParentHandle.TYPE_TAIL_2_HEAD)
-            
+
             if len(hdlHList) > 0:
                 hdlH = editbones[hdlHList[0]]
             hdlT = None
             if len(hdlTList) > 0:
                 hdlT = editbones[hdlTList[0]]
-            
+
             hashStrH = ""
             lr_id_h = ""
             lr_id_t = ""
@@ -396,12 +396,12 @@ class SetupBendyBoneAuto(bpy.types.Operator):
                 isRight_a = elm.isRight
                 isPrefix_a = elm.isPrefix
                 isSuffix_a = elm.isSuffix
-             
+
             hashStrT = ""
             if baseB:
                 elm = common.getNameElements(baseB.bone)
                 hashStrT = common.constructBoneName(elm.basename_nonLR, "", elm.numid, elm.isPrefix, elm.isSuffix)
-                lr_id_t = elm.lr_id 
+                lr_id_t = elm.lr_id
                 isLeft_b = elm.isLeft
                 isRight_b = elm.isRight
                 isPrefix_b = elm.isPrefix
@@ -421,10 +421,10 @@ class SetupBendyBoneAuto(bpy.types.Operator):
 
             if (not isLeft_b) and (not isRight_b) and baseB:
                 lr_id = ""
-            
+
             hdlNmBase = hashlib.md5((hashStrH + hashStrT).encode("utf-8")).hexdigest()
             hdlNm = common.constructBoneName(hdlNmBase, lr_id, "", isPrefix_a or isPrefix_b, isSuffix_a or isSuffix_b)
-    
+
             is_hdl_already = False
             hdlBone = None
             if hdlNm in editbones.keys():
@@ -432,11 +432,11 @@ class SetupBendyBoneAuto(bpy.types.Operator):
                 hdlBone = editbones[hdlNm]
             else:
                 hdlBone = editbones.new(hdlNm)
-            
+
             is_cross = False
             if baseA and baseB:
                 is_cross = True
-            
+
             if is_cross:
 
                 length = 0
@@ -448,7 +448,7 @@ class SetupBendyBoneAuto(bpy.types.Operator):
                     parent = hdlT.parent
                     bbone_x = hdlT.bbone_x
                     bbone_z = hdlT.bbone_z
-                
+
                 if hdlH:
                     length = hdlH.length
                     parent = hdlH.parent
@@ -460,7 +460,7 @@ class SetupBendyBoneAuto(bpy.types.Operator):
                 dirVec_h = _getDirectionVector(baseA.bone)[baseA.type]
                 dirVec_t = _getDirectionVector(baseB.bone)[baseB.type]
                 dirVec = dirVec_h.normalized() + dirVec_t.normalized()
-                
+
                 hdlBone.head = baseVec
                 hdlBone.tail = baseVec + dirVec
                 hdlBone.align_roll(baseB.bone.y_axis.copy())
@@ -470,34 +470,34 @@ class SetupBendyBoneAuto(bpy.types.Operator):
                 hdlBone.select = False
                 hdlBone.select_head = False
                 hdlBone.select_tail = False
-            
+
                 # set parents
                 if not is_hdl_already:
-                
+
                     hdlBone.parent = parent
                     for boneNm in hdlHList:
                         editbones[boneNm].parent = hdlBone
-                    
+
                     for boneNm in hdlTList:
                         editbones[boneNm].parent = hdlBone
-           
+
                 elif is_hdl_already and is_spec_parent:
-                    
+
                     hdlBone.parent = spec_parent_bone
                     for boneNm in hdlHList:
                         editbones[boneNm].parent = hdlBone
-                    
+
                     for boneNm in hdlTList:
                         editbones[boneNm].parent = hdlBone
-            
+
             else:
-            
+
                 pass
-    
+
     def invoke(self, context, event):
-        
+
         propgrp = context.window_manager.uil_setup_bendy_bone_auto_propgrp
-        
+
         # use value of active bone
         if propgrp.is_use_active_value:
             self._default2Active(propgrp, context.active_bone)
@@ -507,47 +507,47 @@ class SetupBendyBoneAuto(bpy.types.Operator):
         if propgrp.is_add_driver_handle:
 
             if propgrp.add_driver_type == _ADD_DRIVER_TYPE_SELF:
-    
+
                 self._drv_target_Armature = context.active_object
-    
+
             elif propgrp.add_driver_type == _ADD_DRIVER_TYPE_NEW_ARMATRUE:
-    
+
                 if common.isEmptyStr(propgrp.new_name_for_driver_target):
                     self.report({'ERROR_INVALID_INPUT'}, "Input new armature name.")
                     return {'CANCELLED'}
-    
+
                 if not self._new_Armature:
                     armDt = bpy.data.armatures.new(propgrp.new_name_for_driver_target)
                     newObj = bpy.data.objects.new(propgrp.new_name_for_driver_target, armDt)
                     context.scene.objects.link(newObj)
-                    
+
                     self._new_Armature = newObj
-    
+
                 self._drv_target_Armature = self._new_Armature
-                
+
             elif propgrp.add_driver_type == _ADD_DRIVER_TYPE_SPECIFIC:
-    
+
                 if common.isEmptyStr(propgrp.specific_add_driver_target):
                     self.report({'ERROR_INVALID_INPUT'}, "Input target armature.")
                     return {'CANCELLED'}
                 target_obj = bpy.data.objects[propgrp.specific_add_driver_target]
-    
+
                 if target_obj.type != "ARMATURE":
                     self.report({'ERROR_INVALID_INPUT'}, "Input Armature.")
                     return {'CANCELLED'}
-        
+
                 if target_obj == self._init_Armature:
                     self.report({'ERROR_INVALID_INPUT'}, "Input another Armature.")
                     return {'CANCELLED'}
-    
+
                 self._drv_target_Armature = target_obj
-    
+
             self._drv_target_Armature.data.draw_type = "BBONE"
-    
+
         return self.execute(context)
-    
+
     def execute(self, context):
-        
+
         # Initialize for loop call #
         self._clearMyConstraints()
         self._base_vec_map = {}
@@ -579,7 +579,7 @@ class SetupBendyBoneAuto(bpy.types.Operator):
             drv_out_id = propgrp.driver_handle_out_identifier
             elm = targetEditBones[editbone]
 #             bone_thin = 1 / editbone.length * propgrp.bbone_scale_ratio
-            
+
             # add handle bone #
             vec = _getDirectionVector(editbone)
             baseVec_h = vec[0].freeze()
@@ -590,7 +590,7 @@ class SetupBendyBoneAuto(bpy.types.Operator):
             if is_add_handles:
 
                 editbone.use_connect = False
-                
+
                 # head/tail handle #
                 hdl_head_nm = self._constructHandleBoneName(elm, hdl_id, head_id)
                 if hdl_head_nm not in editbones.keys():
@@ -625,26 +625,26 @@ class SetupBendyBoneAuto(bpy.types.Operator):
                 editbone_t.select = False
                 editbone_t.select_head = False
                 editbone_t.select_tail = False
-    
+
                 # head
                 pHdlVal_h = ([], [], [], [])
                 if baseVec_h in self._base_vec_map.keys():
                     pHdlVal_h = self._base_vec_map[baseVec_h]
-                
+
                 pHdlVal_h[0].append(editbone.name)
                 pHdlVal_h[2].append(editbone_h.name)
-                
-                self._base_vec_map[baseVec_h] = pHdlVal_h 
-                
+
+                self._base_vec_map[baseVec_h] = pHdlVal_h
+
                 # tail
                 pHdlVal_t = ([], [], [], [])
                 if baseVec_t in self._base_vec_map.keys():
                     pHdlVal_t = self._base_vec_map[baseVec_t]
-                
+
                 pHdlVal_t[1].append(editbone.name)
                 pHdlVal_t[3].append(editbone_t.name)
-                
-                self._base_vec_map[baseVec_t] = pHdlVal_t 
+
+                self._base_vec_map[baseVec_t] = pHdlVal_t
 
                 # driver handle(create info list) #
                 align_roll_vec = editbone.y_axis.copy()
@@ -661,9 +661,10 @@ class SetupBendyBoneAuto(bpy.types.Operator):
                 drv_hdl_in.bone_thin = bone_thin
                 drv_hdl_in.inout_type = DriverHandleBoneInfo.INOUT_TYPE_IN
                 drvHdlInfos.append(drv_hdl_in)
-                
+
                 drv_hdl_out = DriverHandleBoneInfo()
-                drv_hdl_out_nm = self._constructDriverHandleBoneName(elm, hdl_id, drv_out_id)
+                drv_hdl_out_nm = self._constructDriverHandleBoneName(
+                    elm, hdl_id, drv_out_id)
                 drv_hdl_out.name = drv_hdl_out_nm
                 drv_hdl_out.driver_target_nm = editbone.name
                 drv_hdl_out.align_roll_vec = align_roll_vec
@@ -673,7 +674,7 @@ class SetupBendyBoneAuto(bpy.types.Operator):
                 drv_hdl_out.bone_thin = bone_thin
                 drv_hdl_out.inout_type = DriverHandleBoneInfo.INOUT_TYPE_OUT
                 drvHdlInfos.append(drv_hdl_out)
-    
+
                 # parent handle #
                 if not is_hdl_already:
 
@@ -689,8 +690,9 @@ class SetupBendyBoneAuto(bpy.types.Operator):
                         drv_hdl_in.parentVec_h = drv_hdl_out.parentVec_h = parent.head.copy()
                         drv_hdl_in.parentVec_t = drv_hdl_out.parentVec_t = parent.tail.copy()
                         drv_hdl_in.parentRoll = drv_hdl_out.parentRoll = parent.roll
-                        drv_hdl_in.parentElm = drv_hdl_out.parentElm = common.getNameElements(parent)
-                
+                        drv_hdl_in.parentElm = drv_hdl_out.parentElm = common.getNameElements(
+                            parent)
+
                 elif is_hdl_already and is_spec_parent:
 
                     parent = spec_parent_bone
@@ -703,14 +705,16 @@ class SetupBendyBoneAuto(bpy.types.Operator):
                         drv_hdl_in.parentVec_h = drv_hdl_out.parentVec_h = parent.head.copy()
                         drv_hdl_in.parentVec_t = drv_hdl_out.parentVec_t = parent.tail.copy()
                         drv_hdl_in.parentRoll = drv_hdl_out.parentRoll = parent.roll
-                        drv_hdl_in.parentElm = drv_hdl_out.parentElm = common.getNameElements(parent)
-                
+                        drv_hdl_in.parentElm = drv_hdl_out.parentElm = common.getNameElements(
+                            parent)
+
                 # Bendy bone setting(Editbone)
                 editbone_h.bbone_x = editbone_t.bbone_x = bone_thin
                 editbone_h.bbone_z = editbone_t.bbone_z = bone_thin
-            
-                targetBoneNms.append((editbone.name, editbone_h.name, editbone_t.name))
-            
+
+                targetBoneNms.append(
+                    (editbone.name, editbone_h.name, editbone_t.name))
+
             # Bendy bone setting #
             if is_edit_curve:
                 editbone.bbone_x = bone_thin
@@ -729,45 +733,43 @@ class SetupBendyBoneAuto(bpy.types.Operator):
                 editbone.bbone_rollout = propgrp.roll_out * mirrParam
                 editbone.bbone_in = propgrp.ease_in
                 editbone.bbone_out = propgrp.ease_out
-        
+
         # parent head/tail handle #
         if propgrp.is_create_parent_of_handles:
             self._addParentHandles(context)
-        
+
         # driver handle(actually create) #
         if propgrp.is_add_driver_handle:
             self._createDriverHandle(context, drvHdlInfos)
-    
+
         if propgrp.is_add_driver_handle:
             self._addDrivers(context, drvHdlInfos)
 
-        ### POSE MODE PROCESS ###
+        # POSE MODE PROCESS #
         bpy.ops.object.mode_set(mode='POSE', toggle=True)
         self._createStretchToConstraints(context, obj, targetBoneNms)
-        
-         
+
         bpy.ops.object.mode_set(mode='EDIT', toggle=True)
 
-
         return {'FINISHED'}
-    
+
     def _addDrivers(self, context, infos):
 
         obj = context.active_object
-        
+
         for drvinf in infos:
             self._initDriverBase(obj, 'pose.bones["' + drvinf.driver_target_nm + '"].bbone_curve' + drvinf.inout_type + 'x', drvinf, "LOC_X")
             self._initDriverBase(obj, 'pose.bones["' + drvinf.driver_target_nm + '"].bbone_curve' + drvinf.inout_type + 'y', drvinf, "LOC_Y")
             self._initDriverBase(obj, 'pose.bones["' + drvinf.driver_target_nm + '"].bbone_scale' + drvinf.inout_type, drvinf, "SCALE_Y")
             self._initDriverBase(obj, 'pose.bones["' + drvinf.driver_target_nm + '"].bbone_roll' + drvinf.inout_type, drvinf, "ROT_Z").expression = "-var"
-    
+
     def _initDriverBase(self, obj, data_path, drvinf, transType):
-        
+
         obj.driver_remove(data_path, -1)
         driver = obj.driver_add(data_path, -1).driver
         driver.type = "SCRIPTED"
         driver.expression = "var"
-        
+
         v = driver.variables.new()
         v.name = "var"
         v.type = "TRANSFORMS"
@@ -776,14 +778,14 @@ class SetupBendyBoneAuto(bpy.types.Operator):
         v.targets[0].transform_type = transType
         v.targets[0].transform_space = "TRANSFORM_SPACE"
 
-        return driver 
-    
+        return driver
+
     def _createStretchToConstraints(self, context, obj, targetBoneNms):
 
         propgrp = context.window_manager.uil_setup_bendy_bone_auto_propgrp
-        
+
         for names in targetBoneNms:
-            
+
             bones = obj.pose.bones
             bone = bones[names[0]]
             bone_h = bones[names[1]]
@@ -791,7 +793,7 @@ class SetupBendyBoneAuto(bpy.types.Operator):
             bone.use_bbone_custom_handles = True
             bone.bbone_custom_handle_start = bone_h
             bone.bbone_custom_handle_end = bone_t
-             
+
             if _CONSTRAINTS_NAME_STRETCH_TO in bone.constraints.keys():
                 const = bone.constraints[_CONSTRAINTS_NAME_STRETCH_TO]
             else:
@@ -800,18 +802,18 @@ class SetupBendyBoneAuto(bpy.types.Operator):
             const.target = obj
             const.subtarget = bone_t.name
             const.rest_length = bone.length
-            const.bulge = propgrp.constraints_bulge 
+            const.bulge = propgrp.constraints_bulge
             self._const_temp[bone] = const
 
     def _createDriverHandle(self, context, infos):
 
         propgrp = context.window_manager.uil_setup_bendy_bone_auto_propgrp
-        
+
         if propgrp.add_driver_type != _ADD_DRIVER_TYPE_SELF:
             bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
             context.scene.objects.active = self._drv_target_Armature
             bpy.ops.object.mode_set(mode='EDIT', toggle=False)
-        
+
         obj = context.active_object
         editbones = obj.data.edit_bones
 
@@ -832,7 +834,7 @@ class SetupBendyBoneAuto(bpy.types.Operator):
             else:
                 is_hdl_already = True
                 drvbone = editbones[drv_hdl_nm]
-                
+
             drvbone.head = drvinf.head_vec
             drvbone.tail = drvinf.tail_vec
             drvbone.align_roll(drvinf.align_roll_vec)
@@ -842,25 +844,25 @@ class SetupBendyBoneAuto(bpy.types.Operator):
             drvbone.select = False
             drvbone.select_head = False
             drvbone.select_tail = False
-            
+
             if is_hdl_already:
                 pass
             else:
                 if not common.isEmptyStr(drvinf.parentNm) and drvinf.parentNm in editbones.keys():
                     drvbone.parent = editbones[drvinf.parentNm]
-            
+
             if is_spec_parent:
                 drvbone.parent = spec_parent_bone
-            
+
             if propgrp.is_create_driver_parent_transmitter and (propgrp.add_driver_type != _ADD_DRIVER_TYPE_SELF):
                 transmitter_elm = drvinf.parentElm
                 transmitter_id = propgrp.driver_parent_transmitter_identifier
                 if transmitter_elm:
                     if transmitter_elm.isPrefix:
                         transmitter_nm = drvinf.parentNm + "_" + transmitter_id
-                    else: # Suffix
+                    else:  # Suffix
                         transmitter_nm = transmitter_id + "_" + drvinf.parentNm
-                    
+
                     if transmitter_nm in editbones.keys():
                         transmitter = editbones[transmitter_nm]
                     else:
@@ -868,14 +870,14 @@ class SetupBendyBoneAuto(bpy.types.Operator):
                         transmitter.head = drvinf.parentVec_h
                         transmitter.tail = drvinf.parentVec_t
                         transmitter.roll = drvinf.parentRoll
-            
+
                     drvbone.parent = transmitter
                     parentsDic[transmitter_nm] = transmitter_elm
                     transmitter.select = False
                     transmitter.select_head = False
                     transmitter.select_tail = False
 
-        ## Set Copy Transform constraints ##
+        # Set Copy Transform constraints #
         bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
         context.scene.objects.active = self._init_Armature
         bpy.ops.object.mode_set(mode='POSE', toggle=False)
@@ -887,14 +889,14 @@ class SetupBendyBoneAuto(bpy.types.Operator):
                 if const.name == _TRANSMITTER_CONSTRAINTS_NAME:
                     parents.constraints.remove(const)
                     break
-                 
+
             const = parents.constraints.new("COPY_TRANSFORMS")
             const.name = _TRANSMITTER_CONSTRAINTS_NAME
             const.target = obj
             const.subtarget = transmitter_nm
-             
+
         bpy.ops.object.mode_set(mode='EDIT', toggle=False)
-            
+
         # back to init Armature Object
         if propgrp.add_driver_type != _ADD_DRIVER_TYPE_SELF:
             bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
@@ -902,7 +904,7 @@ class SetupBendyBoneAuto(bpy.types.Operator):
             bpy.ops.object.mode_set(mode='EDIT', toggle=False)
 
     def draw(self, context):
-        
+
         layout = self.layout
         box = layout.box()
         box.label(text="Bendy Bone Setting")
@@ -914,7 +916,7 @@ class SetupBendyBoneAuto(bpy.types.Operator):
         col.prop(propgrp, "bbone_scale")
         col.prop(propgrp, "handle_size")
         col.prop(propgrp, "driver_handle_size_ratio")
-        
+
         if is_edit_curve:
             col.prop(propgrp, "segments")
             col.prop(propgrp, "curve_in_x")
@@ -927,19 +929,20 @@ class SetupBendyBoneAuto(bpy.types.Operator):
             col.prop(propgrp, "roll_out")
             col.prop(propgrp, "ease_in")
             col.prop(propgrp, "ease_out")
-        
+
         col.prop(propgrp, "constraints_bulge", text="Volume Variation")
 
-########################
-# Transform pose bones
-#
+
 class TransformBendyBoneForPose(bpy.types.Operator):
+    '''
+      Transform pose bones
+    '''
     bl_idname = "uiler.transformbendyboneforpose"
     bl_label = "Setup Bendy Bone"
     bl_options = {'REGISTER', 'UNDO'}
 
     def _default2Active(self, propgrp, pbone):
-        
+
         propgrp.curve_in_x = pbone.bbone_curveinx
         propgrp.curve_out_x = pbone.bbone_curveoutx
         propgrp.curve_in_y = pbone.bbone_curveiny
@@ -948,28 +951,28 @@ class TransformBendyBoneForPose(bpy.types.Operator):
         propgrp.scale_out = pbone.bbone_scaleout
         propgrp.roll_in = pbone.bbone_rollin
         propgrp.roll_out = pbone.bbone_rollout
-    
+
     def invoke(self, context, event):
-        
+
         propgrp = context.window_manager.uil_setup_bendy_bone_auto_propgrp
-        
+
         if propgrp.is_use_active_value:
             self._default2Active(propgrp, context.active_pose_bone)
-    
+
         obj = context.active_object
         pbones = obj.pose.bones
         targetPoseBones = _getSelectedPoseBones(pbones, propgrp.is_mirror)
-        
+
         global _insertKeyfrmPboneList
         _insertKeyfrmPboneList = []
         for bone in targetPoseBones.keys():
             _insertKeyfrmPboneList.append(bone.name)
 
         return self.execute(context)
-    
+
     def execute(self, context):
-        
-        ### Initialize for loop call ###
+
+        # Initialize for loop call #
         propgrp = context.window_manager.uil_setup_bendy_bone_auto_propgrp
 
         obj = context.active_object
@@ -977,21 +980,21 @@ class TransformBendyBoneForPose(bpy.types.Operator):
         frm = scn.frame_current
         anm = obj.animation_data
         if propgrp.is_insert_keyframes:
-            
+
             if not anm:
                 anm = obj.animation_data_create()
-            
+
             act = anm.action
             if not act:
                 anm.action = act = bpy.data.actions.new(obj.name + " Action")
-        
+
         pbones = obj.pose.bones
         targetPoseBones = _getSelectedPoseBones(pbones, propgrp.is_mirror)
-        ### EDIT MODE PROCESS ###
+        # EDIT MODE PROCESS #
         for pbone in targetPoseBones.keys():
 
             elm = targetPoseBones[pbone]
-            
+
             # Bendy bone setting(Editbone)
             mirrParam = 1.0
             if elm.isMirror and elm.isRight:
@@ -1006,7 +1009,7 @@ class TransformBendyBoneForPose(bpy.types.Operator):
             pbone.bbone_rollout = propgrp.roll_out * mirrParam
 
             if propgrp.is_insert_keyframes:
-                
+
                 self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_curveinx', pbone.bbone_curveinx)
                 self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_curveiny', pbone.bbone_curveiny)
                 self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_curveoutx', pbone.bbone_curveoutx)
@@ -1019,7 +1022,7 @@ class TransformBendyBoneForPose(bpy.types.Operator):
         return {'FINISHED'}
 
     def draw(self, context):
-        
+
         layout = self.layout
         box = layout.box()
         box.label(text="Bendy Bone Setting")
@@ -1037,7 +1040,6 @@ class TransformBendyBoneForPose(bpy.types.Operator):
         col.prop(propgrp, "is_insert_keyframes", text="Insert keyframes", icon="REC", toggle=True)
         col.operator("uiler.bendyboneposeconfirmoperation", text="Confirm", icon="FILE_TICK")
 
-
     def _insertKeyFrame(self, frm, act, data_path, value):
 
         fc = act.fcurves.find(data_path, 0)
@@ -1048,41 +1050,44 @@ class TransformBendyBoneForPose(bpy.types.Operator):
 
 _insertKeyfrmPboneList = None
 
+
 class BendyBonePoseConfirmOperation(bpy.types.Operator):
     bl_idname = "uiler.bendyboneposeconfirmoperation"
     bl_label = "Setup Bendy Bone(Confirm)"
     bl_options = {'REGISTER', 'UNDO'}
-    
+
     def execute(self, context):
-        
+
         return {'FINISHED'}
-    
-########################
-# Rename by order
-#
+
+
 def _reNumberPropIdx(context):
-    
+    '''
+      Rename by order
+    '''
+
     propgrp = context.window_manager.uil_setup_bendy_bone_auto_propgrp
     list = propgrp.rename_bones_grp
-    
+
     for idx in range(0, len(list)):
         list[idx].idx = idx
-    
+
     pass
 
+
 def _chkExistRenameTargetBone(context, bone):
-    
+
     propgrp = context.window_manager.uil_setup_bendy_bone_auto_propgrp
-    
+
     for item in propgrp.rename_bones_grp:
         if item.name == bone.name:
             return True
-        
+
         if propgrp.rename_bones_is_mirror:
             elm = common.getNameElements(bone)
             if item.name == elm.mirror_bonename:
                 return True
-    
+
     return False
 
 
@@ -1090,32 +1095,33 @@ class AddFunction(bpy.types.Operator):
     bl_idname = "uiler.addrenamebonesbyorderatbendybonesetupauto"
     bl_label = "label"
     bl_options = {'REGISTER', 'UNDO'}
-    
+
     def execute(self, context):
 
         propgrp = context.window_manager.uil_setup_bendy_bone_auto_propgrp
 
         for bone in context.selected_pose_bones:
             if _chkExistRenameTargetBone(context, bone):
-                continue 
+                continue
             item = propgrp.rename_bones_grp.add()
             item.id = len(propgrp.rename_bones_grp)
             item.name = bone.name
-            propgrp.rename_bones_grp_idx = len(propgrp.rename_bones_grp)-1
-        
+            propgrp.rename_bones_grp_idx = len(propgrp.rename_bones_grp) - 1
+
             _reNumberPropIdx(context)
 
         return {'FINISHED'}
+
 
 class RemoveFunction(bpy.types.Operator):
     bl_idname = "uiler.removerenamebonesbyorderatbendybonesetupauto"
     bl_label = "label"
     bl_options = {'REGISTER', 'UNDO'}
-    
+
     def execute(self, context):
 
         propgrp = context.window_manager.uil_setup_bendy_bone_auto_propgrp
- 
+
         idx = propgrp.rename_bones_grp_idx
         propgrp.rename_bones_grp.remove(idx)
 
@@ -1123,77 +1129,79 @@ class RemoveFunction(bpy.types.Operator):
 
         return {'FINISHED'}
 
+
 class UpFunction(bpy.types.Operator):
     bl_idname = "uiler.uprenamebonesbyorderatbendybonesetupauto"
     bl_label = "label"
     bl_options = {'REGISTER', 'UNDO'}
-    
+
     def execute(self, context):
 
         propgrp = context.window_manager.uil_setup_bendy_bone_auto_propgrp
- 
+
         idx = propgrp.rename_bones_grp_idx
-        
+
         if idx < 1:
             return {'FINISHED'}
-            
-        length = len(propgrp.rename_bones_grp)
-        propgrp.rename_bones_grp.move(idx, idx-1)
+
+        # length = len(propgrp.rename_bones_grp)
+        propgrp.rename_bones_grp.move(idx, idx - 1)
         propgrp.rename_bones_grp_idx -= 1
 
         _reNumberPropIdx(context)
 
         return {'FINISHED'}
 
+
 class DownFunction(bpy.types.Operator):
     bl_idname = "uiler.downrenamebonesbyorderatbendybonesetupauto"
     bl_label = "label"
     bl_options = {'REGISTER', 'UNDO'}
-    
+
     def execute(self, context):
 
         propgrp = context.window_manager.uil_setup_bendy_bone_auto_propgrp
- 
+
         idx = propgrp.rename_bones_grp_idx
         length = len(propgrp.rename_bones_grp)
-        
-        if idx > length-2:
+
+        if idx > length - 2:
             return {'FINISHED'}
-            
-        propgrp.rename_bones_grp.move(idx, idx+1)
+
+        propgrp.rename_bones_grp.move(idx, idx + 1)
         propgrp.rename_bones_grp_idx += 1
 
         _reNumberPropIdx(context)
 
         return {'FINISHED'}
 
+
 class RefreshFunction(bpy.types.Operator):
     bl_idname = "uiler.refreshrenamebonesbyorderatbendybonesetupauto"
     bl_label = "label"
     bl_options = {'REGISTER', 'UNDO'}
-    
+
     def execute(self, context):
 
         propgrp = context.window_manager.uil_setup_bendy_bone_auto_propgrp
- 
- 
+
         for item in propgrp.rename_bones_grp:
             propgrp.rename_bones_grp.remove(0)
 
-        for bone in context.selected_pose_bones: 
+        for bone in context.selected_pose_bones:
             if _chkExistRenameTargetBone(context, bone):
-                continue 
+                continue
             item = propgrp.rename_bones_grp.add()
             item.id = len(propgrp.rename_bones_grp)
             item.name = bone.name
-        
+
 #         _reNumberPropIdx(context)
 
         return {'FINISHED'}
 
 
 class RenameBoneInfo:
-    
+
     bones = None
     name_element = None
     name_org = ""
@@ -1206,7 +1214,7 @@ class RenameBoneInfo:
     name_org_mirr = ""
     name_hash_mirr = ""
     name_new_mirr = ""
-    
+
     def __init__(self, bones, bone, is_mirror):
         self.bone = bone
         elm = self.name_element = common.getNameElements(bone)
@@ -1219,27 +1227,27 @@ class RenameBoneInfo:
                 self.bone_mirr = bones[elm.mirror_bonename]
                 self.name_element_mirr = common.getNameElements(self.bone_mirr)
                 self.name_hash_mirr = hashlib.md5((elm.mirror_bonename).encode("utf-8")).hexdigest()
-    
+
     def rename2hash(self):
         self.bone.name = self.name_hash
         if self.is_mirror:
-            self.bone_mirr.name = self.name_hash_mirr 
-        
+            self.bone_mirr.name = self.name_hash_mirr
+
         return self
-    
+
     def setNameByBaseAndNumber(self, base, num, sep):
 
         elm = self.name_element
         baseNm = base
         if not common.isEmptyStr(num):
             baseNm = baseNm + sep + num
-        
+
         self.name_new = self.bone.name = common.constructBoneName(baseNm, elm.lr_id, "", elm.isPrefix, elm.isSuffix)
-        
+
         if self.is_mirror:
             elm = self.name_element_mirr
             self.name_new_mirr = self.bone_mirr.name = common.constructBoneName(baseNm, elm.lr_id, "", elm.isPrefix, elm.isSuffix)
-         
+
 
 class RenameBySelectedOrder(bpy.types.Operator):
     bl_idname = "uiler.renameselectedbonesbyorderatbendybonesetupauto"
@@ -1247,7 +1255,7 @@ class RenameBySelectedOrder(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
-        
+
         propgrp = context.window_manager.uil_setup_bendy_bone_auto_propgrp
 
         if common.isEmptyStr(propgrp.rename_bones_basename):
@@ -1267,19 +1275,22 @@ class RenameBySelectedOrder(bpy.types.Operator):
             num = ""
             if propgrp.rename_bones_incremental_type == _RENAME_BONES_INCREMENTAL_TYPE_ALPHA:
                 num = common.getAlphabetByNumber(idx, propgrp.rename_bones_letters_case_type)
-            
+
             if propgrp.rename_bones_incremental_type == _RENAME_BONES_INCREMENTAL_TYPE_NUMBER:
-                num  = common.getPaddingStringByDigit(idx, propgrp.rename_bones_padding_num)
-            
+                num = common.getPaddingStringByDigit(idx, propgrp.rename_bones_padding_num)
+
             boneInf.setNameByBaseAndNumber(propgrp.rename_bones_basename, num, propgrp.rename_bones_separator)
-            
+
             idx += 1
-        
+
         return {'FINISHED'}
+
 
 #########################################################
 # UI
 #########################################################
+
+
 class SetupBendyBoneAutoUIForEdit(bpy.types.Panel):
     bl_label = "Setup Bendy Bone Auto"
     bl_idname = "UILER_SETUP_BENDY_BONE_AUTO_FOR_EDIT_UI_PT_layout"
@@ -1291,12 +1302,12 @@ class SetupBendyBoneAutoUIForEdit(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         return "OK"
-    
+
     def draw(self, context):
-        
+
         layout = self.layout
         propgrp = bpy.context.window_manager.uil_setup_bendy_bone_auto_propgrp
- 
+
         box = layout.box()
         box.label(text="Setup Bendy Bone:", icon="TRIA_DOWN")
         row = box.row()
@@ -1327,14 +1338,14 @@ class SetupBendyBoneAutoUIForEdit(bpy.types.Panel):
         if propgrp.add_driver_type == _ADD_DRIVER_TYPE_SPECIFIC:
             col_d.prop_search(propgrp, "specific_add_driver_target", bpy.data, "objects", text="")
             try:
-    
+
                 if bpy.data.objects[propgrp.specific_add_driver_target].type != "ARMATURE":
                     col_d.label(text="Target is armature only.", icon="ERROR")
-            
-            except:
-                
+
+            except KeyError:
+
                 pass
-        
+
             col_d.prop(propgrp, "is_create_driver_parent_transmitter", text="Create transmitter")
 
         col.separator()
@@ -1350,7 +1361,7 @@ class SetupBendyBoneAutoUIForEdit(bpy.types.Panel):
         col_dt.prop(propgrp, "driver_handle_out_identifier", text="driver(out)")
         col_dt.prop(propgrp, "driver_parent_transmitter_identifier", text="transmitter")
 
-        
+
 class SetupBendyBoneAutoUIForPose(bpy.types.Panel):
     bl_label = "Setup Bendy Bone Auto"
     bl_idname = "UILER_SETUP_BENDY_BONE_AUTO_FOR_POSE_UI_PT_layout"
@@ -1362,12 +1373,12 @@ class SetupBendyBoneAutoUIForPose(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         return "OK"
-    
+
     def draw(self, context):
-        
+
         layout = self.layout
         propgrp = bpy.context.window_manager.uil_setup_bendy_bone_auto_propgrp
- 
+
         box = layout.box()
         box.label(text="Setup Bendy Bone:")
         row = box.row()
@@ -1392,13 +1403,12 @@ class SetupBendyBoneAutoUIForPose(bpy.types.Panel):
         if propgrp.rename_bones_incremental_type != _RENAME_BONES_INCREMENTAL_TYPE_NONE:
             col.prop(propgrp, "rename_bones_incremental_offset", text="offset")
 
-        
         row2 = col.row()
         box = row2.box()
         col_m = box.column(align=True)
         row3 = col_m.row(align=True)
         row3.template_list("RenameBonesList_items", "", propgrp, "rename_bones_grp", propgrp, "rename_bones_grp_idx", rows=3)
-    
+
         col_r = row2.column(align=True)
         col_r.operator("uiler.addrenamebonesbyorderatbendybonesetupauto", text="", icon="ZOOMIN")
         col_r.operator("uiler.removerenamebonesbyorderatbendybonesetupauto", text="", icon="ZOOMOUT")
@@ -1406,6 +1416,7 @@ class SetupBendyBoneAutoUIForPose(bpy.types.Panel):
         col_r.separator()
         col_r.operator("uiler.uprenamebonesbyorderatbendybonesetupauto", icon='TRIA_UP', text="")
         col_r.operator("uiler.downrenamebonesbyorderatbendybonesetupauto", icon='TRIA_DOWN', text="")
+
 
 class RenameBonesList_items(bpy.types.UIList):
 
@@ -1415,7 +1426,7 @@ class RenameBonesList_items(bpy.types.UIList):
         row.prop(item, "name", text="", icon="BONE_DATA", emboss=False, translate=False)
 
     def invoke(self, context, event):
-        pass   
+        pass
 
 
 def register():
@@ -1425,12 +1436,13 @@ def register():
     _defProperties()
     bpy.utils.register_module(__name__)
 
+
 def unregister():
     bpy.utils.unregister_class(RenameBoneNamePropGrp)
     bpy.utils.unregister_class(RenameBoneItemsPropGrp)
     bpy.utils.unregister_class(SetupBendyBoneProperties)
     bpy.utils.unregister_module(__name__)
 
+
 if __name__ == "__main__":
     register()
-
