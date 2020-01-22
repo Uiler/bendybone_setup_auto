@@ -1,4 +1,3 @@
-import bpy
 import re
 
 #########################################################
@@ -6,13 +5,12 @@ import re
 LETTERS_CASE_TYPE_UPPER = "ABC"
 LETTERS_CASE_TYPE_LOWER = "abc"
 
-#########################################################
-# Global Variables
-#########################################################
 
 #########################################################
 # Class
 #########################################################
+
+
 class BoneNameElements:
     
     bonename = ""
@@ -162,8 +160,7 @@ def getNameElements(bone):
     ret.mirror_bonename = mirrBoneNm
     
     return ret
-    
-#     return (bone.name, nonNumberNm, num, baseNm, chr, isPrefix, isSuffix, isLeft, isRight, isMirror, mirrChr, mirrBoneNm)
+
 
 def constructBoneName(baseNm, chr, num, isPrefix, isSuffix):
     
@@ -179,14 +176,15 @@ def constructBoneName(baseNm, chr, num, isPrefix, isSuffix):
         
         return baseNm + num
 
+
 def getPaddingStringByDigit(num, padding):
 
     fPtn = "{0:0" + str(padding) + "d}"
     
     return fPtn.format(num)
 
-# idx is 0-origin    
-def getAlphabetByNumber(idx, type):
+
+def getAlphabetByNumber(idx, type):  # idx is 0-origin
     
     stChr = _alphaBetStartChrNum(type)
     ret = []
@@ -200,10 +198,11 @@ def getAlphabetByNumber(idx, type):
         mod = (next - 1) % 26
         i = mod + stChr
         ret.append(chr(int(i)))
-        next = (next -1 - mod) / 26
+        next = (next - 1 - mod) / 26
             
     ret.reverse()
     return "".join(ret)
+
 
 def _alphaBetStartChrNum(type):
     
@@ -212,12 +211,14 @@ def _alphaBetStartChrNum(type):
     else:
         return 97
 
+
 def isEmptyStr(str):
     
     if str == "" or str is None:
         return True
     else:
         return False
+
 
 def isVisiblePoseBone(bone):
     
@@ -241,6 +242,7 @@ def isVisiblePoseBone(bone):
     
     return False
 
+
 def isVisibleBone(bone):
     
     if not bone:
@@ -262,17 +264,3 @@ def isVisibleBone(bone):
         return data.layers[bLayer] and not bone.hide
     
     return False
-        
-
-
-#########################################################
-# Properties
-#########################################################
-
-#########################################################
-# Actions
-#########################################################
-
-#########################################################
-# UI
-#########################################################

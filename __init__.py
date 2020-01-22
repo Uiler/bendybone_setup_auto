@@ -1,30 +1,27 @@
 import bpy
-import re
 import hashlib
-
-from asyncore import poll
 
 from . import common
 
 
 bl_info = {
-    "name" : "Bendy Bone Setup Auto",
-    "author" : "Uiler",
-    "version" : (0,1), 
-    "blender" : (2, 7, 8),
-    "location" : "Rigging",
-    "description" : "Setup automatically bendy bone.",
-    "warning" : "",
-    "wiki_url" : "",
-    "tracker_url" : "",
-    "category" : "Rigging"
+    "name": "Bendy Bone Setup Auto",
+    "author": "Uiler",
+    "version": (0, 2),
+    "blender": (2, 8, 1),
+    "location": "Rigging",
+    "description": "Setup automatically bendy bone.",
+    "warning": "",
+    "wiki_url": "",
+    "tracker_url": "",
+    "category": "Rigging"
 }
 
 #########################################################
 # Constants
 #########################################################
 _PARENTS_BONE_TYPE_USE_ORIGINAL = "Use original"
-_PARENTS_BONE_TYPE_SPECIFIC = "Specific Bone" 
+_PARENTS_BONE_TYPE_SPECIFIC = "Specific Bone"
 _ADD_DRIVER_TYPE_SELF = "Self"
 _ADD_DRIVER_TYPE_NEW_ARMATRUE = "New"
 _ADD_DRIVER_TYPE_SPECIFIC = "Specific"
@@ -42,6 +39,8 @@ _RENAME_BONES_ALPHABET_CASE_LOWER = common.LETTERS_CASE_TYPE_LOWER
 #########################################################
 # Class
 #########################################################
+
+
 class DriverHandleBoneInfo:
     
     INOUT_TYPE_IN = "in"
@@ -64,6 +63,8 @@ class DriverHandleBoneInfo:
 #########################################################
 # Properties
 #########################################################
+
+
 def _updateRenameXAxisMirror(self, context):
     
     propgrp = self
@@ -93,18 +94,20 @@ class RenameBoneNamePropGrp(bpy.types.PropertyGroup):
     '''name = bpy.props.StringProperty() '''
     id = bpy.props.IntProperty()
 
+
 class RenameBoneItemsPropGrp(bpy.types.PropertyGroup):
     '''name = bpy.props.StringProperty() '''
     id = bpy.props.IntProperty()
     idx = bpy.props.IntProperty()
     bone_names = bpy.props.CollectionProperty(type=RenameBoneNamePropGrp)
 
+
 class SetupBendyBoneProperties(bpy.types.PropertyGroup):
 
-    # System setting properties    
-    handle_size_ratio = bpy.props.FloatProperty(name="handle_size_ratio", description="Ratio of handle bones size.Default is base bones * 0.3.", default=0.3,step=0.1, subtype='NONE')
-    handle_size = bpy.props.FloatProperty(name="handle_size", description="Size of handle bones.", default=0.8,step=0.1, subtype='NONE')
-    driver_handle_size_ratio = bpy.props.FloatProperty(name="driver_handle_size_ratio", description="Ratio of driver handle bones.(ex handle bones length * 0.8)", default=0.8,step=0.1, subtype='NONE')
+    # System setting properties
+    handle_size_ratio = bpy.props.FloatProperty(name="handle_size_ratio", description="Ratio of handle bones size.Default is base bones * 0.3.", default=0.3, step=0.1, subtype='NONE')
+    handle_size = bpy.props.FloatProperty(name="handle_size", description="Size of handle bones.", default=0.8, step=0.1, subtype='NONE')
+    driver_handle_size_ratio = bpy.props.FloatProperty(name="driver_handle_size_ratio", description="Ratio of driver handle bones.(ex handle bones length * 0.8)", default=0.8, step=0.1, subtype='NONE')
     bbone_scale_ratio = bpy.props.FloatProperty(name="bbone_scale_ratio", description="Ratio of bendy bones scale.", min=0.000001, default=0.17, step=0.1, subtype="NONE")
     bbone_scale = bpy.props.FloatProperty(name="bbone_scale", description="Scale of bendy bones.", min=0.000001, default=0.03, step=0.1, subtype="NONE")
     handle_identifier = bpy.props.StringProperty(name="handle_identifier", description="identifier of handle bone.(ex:bone_L -> hdl_head_bone_L/hdl_tail_bone_L)", default="hdl", subtype='NONE')
@@ -118,17 +121,17 @@ class SetupBendyBoneProperties(bpy.types.PropertyGroup):
     is_edit_curve = bpy.props.BoolProperty(name="is_edit_curve", description="Edit curve variables.", default=True, subtype="NONE")
     is_add_handles = bpy.props.BoolProperty(name="is_add_handles", description="Add handles of bendy bones.", default=True, subtype="NONE")
     parents_bone_type_it = []
-    parents_bone_type_it.append((_PARENTS_BONE_TYPE_USE_ORIGINAL, _PARENTS_BONE_TYPE_USE_ORIGINAL, "Set parent of handle bones to original one of selected bones.","", 0))
-    parents_bone_type_it.append((_PARENTS_BONE_TYPE_SPECIFIC, _PARENTS_BONE_TYPE_SPECIFIC, "Set parent of handle bones to a specific bone.","", 1))
-    parents_bone_type = bpy.props.EnumProperty(items = parents_bone_type_it, default=_PARENTS_BONE_TYPE_USE_ORIGINAL)
+    parents_bone_type_it.append((_PARENTS_BONE_TYPE_USE_ORIGINAL, _PARENTS_BONE_TYPE_USE_ORIGINAL, "Set parent of handle bones to original one of selected bones.", "", 0))
+    parents_bone_type_it.append((_PARENTS_BONE_TYPE_SPECIFIC, _PARENTS_BONE_TYPE_SPECIFIC, "Set parent of handle bones to a specific bone.", "", 1))
+    parents_bone_type = bpy.props.EnumProperty(items=parents_bone_type_it, default=_PARENTS_BONE_TYPE_USE_ORIGINAL)
     specific_parents_bone_target = bpy.props.StringProperty(name="specific_parents_bone_target", description="Set parent to specific bone.", default="", subtype='NONE')
     driver_handle_in_identifier = bpy.props.StringProperty(name="driver_handle_in_identifier", description="identifier of handle bone of curve-in driver.(ex:bone_L -> hdl_coi_bone_L)", default="coi", subtype="NONE")
     driver_handle_out_identifier = bpy.props.StringProperty(name="driver_handle_out_identifier", description="identifier of handle bone of curve-out driver.(ex:bone_L -> hdl_coo_bone_L)", default="coo", subtype="NONE")
     add_driver_type_it = []
-    add_driver_type_it.append((_ADD_DRIVER_TYPE_SELF, _ADD_DRIVER_TYPE_SELF, "Add driver bones to self.","", 0))
-    add_driver_type_it.append((_ADD_DRIVER_TYPE_NEW_ARMATRUE, _ADD_DRIVER_TYPE_NEW_ARMATRUE, "Add new armature, and add driver bones to it.","", 1))
-    add_driver_type_it.append((_ADD_DRIVER_TYPE_SPECIFIC, _ADD_DRIVER_TYPE_SPECIFIC, "Add driver bones to specific armature.","", 2))
-    add_driver_type = bpy.props.EnumProperty(items = add_driver_type_it, default=_ADD_DRIVER_TYPE_SELF)
+    add_driver_type_it.append((_ADD_DRIVER_TYPE_SELF, _ADD_DRIVER_TYPE_SELF, "Add driver bones to self.", "", 0))
+    add_driver_type_it.append((_ADD_DRIVER_TYPE_NEW_ARMATRUE, _ADD_DRIVER_TYPE_NEW_ARMATRUE, "Add new armature, and add driver bones to it.", "", 1))
+    add_driver_type_it.append((_ADD_DRIVER_TYPE_SPECIFIC, _ADD_DRIVER_TYPE_SPECIFIC, "Add driver bones to specific armature.", "", 2))
+    add_driver_type = bpy.props.EnumProperty(items=add_driver_type_it, default=_ADD_DRIVER_TYPE_SELF)
     specific_add_driver_target = bpy.props.StringProperty(name="specific_add_driver_target", description="Target of adding driver bones of handle offset values.(in_x,out_x,...,scale_x,...,roll_x etc).", default="", subtype='NONE')
     new_name_for_driver_target = bpy.props.StringProperty(name="specific_add_driver_target", description="Create new Armature and it is the target of adding driver bones of handle offset values.(in_x,out_x,...,scale_x,...,roll_x etc).", default="New Armature", subtype='NONE')
     is_create_driver_parent_transmitter = bpy.props.BoolProperty(name="is_create_driver_parent_transmitter", description="If driver target is new or specific, add transmitter of original parent bone's transform.", default=False, subtype="NONE")
@@ -144,8 +147,8 @@ class SetupBendyBoneProperties(bpy.types.PropertyGroup):
     scale_out = bpy.props.FloatProperty(name="scale_out", description="Scale factor for end of the B-Bone, adjusts thickness (for tapering effects)", default=1.0, step=0.01, subtype="NONE", precision=5)
     roll_in = bpy.props.FloatProperty(name="roll_in", description="Roll offset for the start of the B-Bone, adjusts twist", default=0.0, step=1.0, subtype="ANGLE", precision=5)
     roll_out = bpy.props.FloatProperty(name="roll_out", description="Roll offset for the end of the B-Bone, adjusts twist", default=0.0, step=1.0, subtype="ANGLE", precision=5)
-    ease_in = bpy.props.FloatProperty(name="ease_in", description="Length of first Bezier Handle (for B-Bones only)", default=1.0, step=0.01, min=0.0, max=2.0, soft_min=0.0, soft_max=2.0,subtype="NONE", precision=5)
-    ease_out = bpy.props.FloatProperty(name="ease_out", description="Length of second Bezier Handle (for B-Bones only)", default=1.0, step=0.01, min=0.0, max=2.0, soft_min=0.0, soft_max=2.0,subtype="NONE", precision=5)
+    ease_in = bpy.props.FloatProperty(name="ease_in", description="Length of first Bezier Handle (for B-Bones only)", default=1.0, step=0.01, min=0.0, max=2.0, soft_min=0.0, soft_max=2.0, subtype="NONE", precision=5)
+    ease_out = bpy.props.FloatProperty(name="ease_out", description="Length of second Bezier Handle (for B-Bones only)", default=1.0, step=0.01, min=0.0, max=2.0, soft_min=0.0, soft_max=2.0, subtype="NONE", precision=5)
 
     # Bendy bone properties(posebone)
     constraints_bulge = bpy.props.FloatProperty(name="constraints_bulge", description='"Stretch to" constraints volume value.volume="1.0":If bbone squashed,inflate/"0.0":not inflate', default=0.0, step=0.1, subtype="NONE")
@@ -158,19 +161,18 @@ class SetupBendyBoneProperties(bpy.types.PropertyGroup):
     rename_bones_grp_idx = bpy.props.IntProperty()
     rename_bones_basename = bpy.props.StringProperty(name="rename_bones_basename", description="Base name of bones.", default="Name", subtype='NONE')
     rename_bones_separator = bpy.props.StringProperty(name="rename_bones_separator", description="Separator of parts of name.", default="_", subtype="NONE")
-    rename_bones_padding_num = bpy.props.IntProperty(name="rename_bones_padding_num", description="Padding number of digits.", default=1, min=1, max=6, soft_min=1, soft_max=6, step=1,subtype="NONE")
+    rename_bones_padding_num = bpy.props.IntProperty(name="rename_bones_padding_num", description="Padding number of digits.", default=1, min=1, max=6, soft_min=1, soft_max=6, step=1, subtype="NONE")
     rename_bones_incremental_type_it = []
-    rename_bones_incremental_type_it.append((_RENAME_BONES_INCREMENTAL_TYPE_NONE, _RENAME_BONES_INCREMENTAL_TYPE_NONE, "Incremental character is none.","", 1))
-    rename_bones_incremental_type_it.append((_RENAME_BONES_INCREMENTAL_TYPE_ALPHA, _RENAME_BONES_INCREMENTAL_TYPE_ALPHA, "Incremental character is alphabet.","", 2))
-    rename_bones_incremental_type_it.append((_RENAME_BONES_INCREMENTAL_TYPE_NUMBER, _RENAME_BONES_INCREMENTAL_TYPE_NUMBER, "Incremental character is number.","", 3))
-    rename_bones_incremental_type = bpy.props.EnumProperty(items = rename_bones_incremental_type_it, default=_RENAME_BONES_INCREMENTAL_TYPE_ALPHA)
-    rename_bones_incremental_offset = bpy.props.IntProperty(name="rename_bones_incremental_offset", description="Offset of start of numbering.", default=0, min=0, soft_min=0, step=1,subtype="NONE")
+    rename_bones_incremental_type_it.append((_RENAME_BONES_INCREMENTAL_TYPE_NONE, _RENAME_BONES_INCREMENTAL_TYPE_NONE, "Incremental character is none.", "", 1))
+    rename_bones_incremental_type_it.append((_RENAME_BONES_INCREMENTAL_TYPE_ALPHA, _RENAME_BONES_INCREMENTAL_TYPE_ALPHA, "Incremental character is alphabet.", "", 2))
+    rename_bones_incremental_type_it.append((_RENAME_BONES_INCREMENTAL_TYPE_NUMBER, _RENAME_BONES_INCREMENTAL_TYPE_NUMBER, "Incremental character is number.", "", 3))
+    rename_bones_incremental_type = bpy.props.EnumProperty(items=rename_bones_incremental_type_it, default=_RENAME_BONES_INCREMENTAL_TYPE_ALPHA)
+    rename_bones_incremental_offset = bpy.props.IntProperty(name="rename_bones_incremental_offset", description="Offset of start of numbering.", default=0, min=0, soft_min=0, step=1, subtype="NONE")
     rename_bones_is_mirror = bpy.props.BoolProperty(name="rename_bones_is_mirror", description="Rename X-Axis Mirror Bone.", default=True, subtype='NONE', update=_updateRenameXAxisMirror)
     rename_bones_letters_case_type_id = []
-    rename_bones_letters_case_type_id.append((_RENAME_BONES_ALPHABET_CASE_UPPER, _RENAME_BONES_ALPHABET_CASE_UPPER, "Uppercase alphabets.","", 0))
-    rename_bones_letters_case_type_id.append((_RENAME_BONES_ALPHABET_CASE_LOWER, _RENAME_BONES_ALPHABET_CASE_LOWER, "Lowercase alphabets.","", 1))
-    rename_bones_letters_case_type = bpy.props.EnumProperty(items = rename_bones_letters_case_type_id, default=_RENAME_BONES_ALPHABET_CASE_UPPER)
-    
+    rename_bones_letters_case_type_id.append((_RENAME_BONES_ALPHABET_CASE_UPPER, _RENAME_BONES_ALPHABET_CASE_UPPER, "Uppercase alphabets.", "", 0))
+    rename_bones_letters_case_type_id.append((_RENAME_BONES_ALPHABET_CASE_LOWER, _RENAME_BONES_ALPHABET_CASE_LOWER, "Lowercase alphabets.", "", 1))
+    rename_bones_letters_case_type = bpy.props.EnumProperty(items=rename_bones_letters_case_type_id, default=_RENAME_BONES_ALPHABET_CASE_UPPER)
     
     
 def _defProperties():
@@ -178,9 +180,12 @@ def _defProperties():
     # Define Addon's Properties
     bpy.types.WindowManager.uil_setup_bendy_bone_auto_propgrp = bpy.props.PointerProperty(type=SetupBendyBoneProperties)
     
+
 #########################################################
 # Functions(Private)
 #########################################################
+
+
 def _getSelectedPoseBones(pbones, isMirror):
     
     ret = {}
@@ -207,6 +212,7 @@ def _getSelectedPoseBones(pbones, isMirror):
                         ret[mirrbone] = common.getNameElements(mirrbone)
 
     return ret
+
 
 def _getSelectedEditableBones(editbones, isMirror):
     
@@ -235,6 +241,7 @@ def _getSelectedEditableBones(editbones, isMirror):
 
     return ret
 
+
 class TempParentHandle:
     
     TYPE_HEAD_2_TAIL = 2
@@ -247,6 +254,7 @@ class TempParentHandle:
         self.bone = bone
         self.type = type
 
+
 def _getDirectionVector(editbone):
     
     headVec = editbone.head.copy()
@@ -256,19 +264,22 @@ def _getDirectionVector(editbone):
     
     return (headVec, tailVec, dVech2t, dVect2h)
 
+
 #########################################################
 # Actions
 #########################################################
-########################
-# Setup bendy bone
-#
+
+
 class SetupBendyBoneAuto(bpy.types.Operator):
+    '''
+      Setup bendy bone
+    '''
     bl_idname = "uiler.setupbendyboneauto"
     bl_label = "Setup Bendy Bone"
     bl_options = {'REGISTER', 'UNDO'}
     
-    _const_temp = {} # key:bone value:constraints
-    _base_vec_map = {} # key:Vector(head/tail) value:(basebone(with head), basebone(with tail), handle bone collection(head), handle bone collection(tail))
+    _const_temp = {}  # key:bone value:constraints
+    _base_vec_map = {}  # key:Vector(head/tail) value:(basebone(with head), basebone(with tail), handle bone collection(head), handle bone collection(tail))
     _init_Armature = None
     _drv_target_Armature = None
     _new_Armature = None
@@ -284,14 +295,14 @@ class SetupBendyBoneAuto(bpy.types.Operator):
         
         ret = ""
         sep = "_"
-        lr_id = elm.lr_id
-        num = elm.numid
+        # lr_id = elm.lr_id
+        # num = elm.numid
         isPrefix = elm.isPrefix
-        isSuffix = elm.isSuffix
+        # isSuffix = elm.isSuffix
         
         if isPrefix:
             ret = elm.bonename + sep + hdl_id + sep + end_id
-        else: # Suffix
+        else:  # Suffix
             ret = hdl_id + sep + end_id + sep + elm.bonename
         
         return ret
@@ -300,13 +311,13 @@ class SetupBendyBoneAuto(bpy.types.Operator):
         
         ret = ""
         sep = "_"
-        lr_id = elm.lr_id
-        num = elm.numid
+        # lr_id = elm.lr_id
+        # num = elm.numid
         isPrefix = elm.isPrefix
-        isSuffix = elm.isSuffix
+        # isSuffix = elm.isSuffix
         if isPrefix:
             ret = elm.bonename + sep + hdl_id + sep + drv_id
-        else: # Suffix
+        else:  # Suffix
             ret = hdl_id + sep + drv_id + sep + elm.bonename
         
         return ret
@@ -345,7 +356,6 @@ class SetupBendyBoneAuto(bpy.types.Operator):
             baseTList = sorted(map[keyVec][1])
             hdlHList = sorted(map[keyVec][2])
             hdlTList = sorted(map[keyVec][3])
-            
             
             baseA = None
             if len(baseHList) > 0:
@@ -483,9 +493,6 @@ class SetupBendyBoneAuto(bpy.types.Operator):
             else:
             
                 pass
-            
-                
-            
     
     def invoke(self, context, event):
         
@@ -541,7 +548,7 @@ class SetupBendyBoneAuto(bpy.types.Operator):
     
     def execute(self, context):
         
-        ### Initialize for loop call ###
+        # Initialize for loop call #
         self._clearMyConstraints()
         self._base_vec_map = {}
 
@@ -561,10 +568,9 @@ class SetupBendyBoneAuto(bpy.types.Operator):
         targetBoneNms = []
         drvHdlInfos = []
         bone_thin = propgrp.bbone_scale
-        ### EDIT MODE PROCESS ###
+        # EDIT MODE PROCESS #
         for editbone in targetEditBones.keys():
 
-    
             is_hdl_already = False
             hdl_id = propgrp.handle_identifier
             tail_id = propgrp.tail_identifier
@@ -574,7 +580,7 @@ class SetupBendyBoneAuto(bpy.types.Operator):
             elm = targetEditBones[editbone]
 #             bone_thin = 1 / editbone.length * propgrp.bbone_scale_ratio
             
-            ### add handle bone ###
+            # add handle bone #
             vec = _getDirectionVector(editbone)
             baseVec_h = vec[0].freeze()
             baseVec_t = vec[1].freeze()
@@ -585,7 +591,7 @@ class SetupBendyBoneAuto(bpy.types.Operator):
 
                 editbone.use_connect = False
                 
-                ## head/tail handle ##
+                # head/tail handle #
                 hdl_head_nm = self._constructHandleBoneName(elm, hdl_id, head_id)
                 if hdl_head_nm not in editbones.keys():
                     editbone_h = editbones.new(hdl_head_nm)
@@ -595,7 +601,7 @@ class SetupBendyBoneAuto(bpy.types.Operator):
 #                 editbone_h.head = baseVec_t + tpar * baseVec_t2h # new head = tailVec + tpar * "direction vector(tail -> head)"
 #                 editbone_h.tail = baseVec_h
                 editbone_h.head = baseVec_h
-                editbone_h.tail = baseVec_t + tpar * baseVec_t2h # new head = tailVec + tpar * "direction vector(tail -> head)"
+                editbone_h.tail = baseVec_t + tpar * baseVec_t2h  # new head = tailVec + tpar * "direction vector(tail -> head)"
                 editbone_h.length = propgrp.handle_size
                 tmpTail = editbone_h.head.copy()
                 tmpHead = editbone_h.tail.copy()
@@ -613,7 +619,7 @@ class SetupBendyBoneAuto(bpy.types.Operator):
                     is_hdl_already = True
                     editbone_t = editbones[hdl_tail_nm]
                 editbone_t.head = baseVec_t
-                editbone_t.tail = baseVec_h + tpar * baseVec_h2t # new tail = headVec + tpar * "direction vector(head -> tail)"
+                editbone_t.tail = baseVec_h + tpar * baseVec_h2t  # new tail = headVec + tpar * "direction vector(head -> tail)"
                 editbone_t.roll = editbone.roll
                 editbone_t.length = propgrp.handle_size
                 editbone_t.select = False
@@ -640,7 +646,7 @@ class SetupBendyBoneAuto(bpy.types.Operator):
                 
                 self._base_vec_map[baseVec_t] = pHdlVal_t 
 
-                ## driver handle(create info list) ##
+                # driver handle(create info list) #
                 align_roll_vec = editbone.y_axis.copy()
                 align_roll_vec.negate()
 
@@ -668,7 +674,7 @@ class SetupBendyBoneAuto(bpy.types.Operator):
                 drv_hdl_out.inout_type = DriverHandleBoneInfo.INOUT_TYPE_OUT
                 drvHdlInfos.append(drv_hdl_out)
     
-                ## parent handle ##
+                # parent handle #
                 if not is_hdl_already:
 
                     parent = editbone.parent
@@ -705,7 +711,7 @@ class SetupBendyBoneAuto(bpy.types.Operator):
             
                 targetBoneNms.append((editbone.name, editbone_h.name, editbone_t.name))
             
-            ### Bendy bone setting ###
+            # Bendy bone setting #
             if is_edit_curve:
                 editbone.bbone_x = bone_thin
                 editbone.bbone_z = bone_thin
@@ -724,12 +730,11 @@ class SetupBendyBoneAuto(bpy.types.Operator):
                 editbone.bbone_in = propgrp.ease_in
                 editbone.bbone_out = propgrp.ease_out
         
-        
-        ## parent head/tail handle ##
+        # parent head/tail handle #
         if propgrp.is_create_parent_of_handles:
             self._addParentHandles(context)
         
-        ## driver handle(actually create) ##
+        # driver handle(actually create) #
         if propgrp.is_add_driver_handle:
             self._createDriverHandle(context, drvHdlInfos)
     
