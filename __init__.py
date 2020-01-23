@@ -142,8 +142,10 @@ class SetupBendyBoneProperties(bpy.types.PropertyGroup):
     curve_out_x: bpy.props.FloatProperty(name="curve_out_x", description="X-axis handle offset for end of the B-Bone's curve, adjusts curvature", default=0.0, step=0.01, subtype="NONE", precision=5)
     curve_in_y: bpy.props.FloatProperty(name="curve_in_y", description="Y-axis handle offset for start of the B-Bone's curve, adjusts curvature", default=0.0, step=0.01, subtype="NONE", precision=5)
     curve_out_y: bpy.props.FloatProperty(name="curve_out_y", description="Y-axis handle offset for end of the B-Bone's curve, adjusts curvature", default=0.0, step=0.01, subtype="NONE", precision=5)
-    scale_in: bpy.props.FloatProperty(name="scale_in", description="Scale factor for start of the B-Bone, adjusts thickness (for tapering effects)", default=1.0, step=0.01, subtype="NONE", precision=5)
-    scale_out: bpy.props.FloatProperty(name="scale_out", description="Scale factor for end of the B-Bone, adjusts thickness (for tapering effects)", default=1.0, step=0.01, subtype="NONE", precision=5)
+    scale_in_x: bpy.props.FloatProperty(name="scale_in_x", description="Scale factor for start of the B-Bone, adjusts thickness (for tapering effects)", default=1.0, step=0.01, subtype="NONE", precision=5)
+    scale_in_y: bpy.props.FloatProperty(name="scale_in_y", description="Scale factor for start of the B-Bone, adjusts thickness (for tapering effects)", default=1.0, step=0.01, subtype="NONE", precision=5)
+    scale_out_x: bpy.props.FloatProperty(name="scale_out_x", description="Scale factor for end of the B-Bone, adjusts thickness (for tapering effects)", default=1.0, step=0.01, subtype="NONE", precision=5)
+    scale_out_y: bpy.props.FloatProperty(name="scale_out_y", description="Scale factor for end of the B-Bone, adjusts thickness (for tapering effects)", default=1.0, step=0.01, subtype="NONE", precision=5)
     roll_in: bpy.props.FloatProperty(name="roll_in", description="Roll offset for the start of the B-Bone, adjusts twist", default=0.0, step=1.0, subtype="ANGLE", precision=5)
     roll_out: bpy.props.FloatProperty(name="roll_out", description="Roll offset for the end of the B-Bone, adjusts twist", default=0.0, step=1.0, subtype="ANGLE", precision=5)
     ease_in: bpy.props.FloatProperty(name="ease_in", description="Length of first Bezier Handle (for B-Bones only)", default=1.0, step=0.01, min=0.0, max=2.0, soft_min=0.0, soft_max=2.0, subtype="NONE", precision=5)
@@ -329,12 +331,14 @@ class SetupBendyBoneAuto(bpy.types.Operator):
         propgrp.curve_out_x = editbone.bbone_curveoutx
         propgrp.curve_in_y = editbone.bbone_curveiny
         propgrp.curve_out_y = editbone.bbone_curveouty
-        propgrp.scale_in = editbone.bbone_scalein
-        propgrp.scale_out = editbone.bbone_scaleout
+        propgrp.scale_in_x = editbone.bbone_scaleinx
+        propgrp.scale_in_y = editbone.bbone_scaleiny
+        propgrp.scale_out_x = editbone.bbone_scaleoutx
+        propgrp.scale_out_y = editbone.bbone_scaleouty
         propgrp.roll_in = editbone.bbone_rollin
         propgrp.roll_out = editbone.bbone_rollout
-        propgrp.ease_in = editbone.bbone_in
-        propgrp.ease_out = editbone.bbone_out
+        propgrp.ease_in = editbone.bbone_easein
+        propgrp.ease_out = editbone.bbone_easeout
 
     def _addParentHandles(self, context):
 
@@ -541,7 +545,7 @@ class SetupBendyBoneAuto(bpy.types.Operator):
 
                 self._drv_target_Armature = target_obj
 
-            self._drv_target_Armature.data.draw_type = "BBONE"
+            self._drv_target_Armature.data.display_type = "BBONE"
 
         return self.execute(context)
 
@@ -568,7 +572,7 @@ class SetupBendyBoneAuto(bpy.types.Operator):
         drvHdlInfos = []
         bone_thin = propgrp.bbone_scale
         # EDIT MODE PROCESS #
-        for editbone in targetEditBones.keys():
+        for editbone in targetEditBones.keys():  # key:bpy.types.EditBone value:@see common.getNameElements(bone).returnValue
 
             is_hdl_already = False
             hdl_id = propgrp.handle_identifier
@@ -625,6 +629,12 @@ class SetupBendyBoneAuto(bpy.types.Operator):
                 editbone_t.select_head = False
                 editbone_t.select_tail = False
 
+                # set handle
+                editbone.bbone_handle_type_start = 'ABSOLUTE'
+                editbone.bbone_handle_type_end = 'ABSOLUTE'
+                editbone.bbone_custom_handle_start = editbone_h
+                editbone.bbone_custom_handle_end = editbone_t
+
                 # head
                 pHdlVal_h = ([], [], [], [])
                 if baseVec_h in self._base_vec_map.keys():
@@ -662,8 +672,7 @@ class SetupBendyBoneAuto(bpy.types.Operator):
                 drvHdlInfos.append(drv_hdl_in)
 
                 drv_hdl_out = DriverHandleBoneInfo()
-                drv_hdl_out_nm = self._constructDriverHandleBoneName(
-                    elm, hdl_id, drv_out_id)
+                drv_hdl_out_nm = self._constructDriverHandleBoneName(elm, hdl_id, drv_out_id)
                 drv_hdl_out.name = drv_hdl_out_nm
                 drv_hdl_out.driver_target_nm = editbone.name
                 drv_hdl_out.align_roll_vec = align_roll_vec
@@ -726,12 +735,14 @@ class SetupBendyBoneAuto(bpy.types.Operator):
                 editbone.bbone_curveoutx = propgrp.curve_out_x * mirrParam
                 editbone.bbone_curveiny = propgrp.curve_in_y
                 editbone.bbone_curveouty = propgrp.curve_out_y
-                editbone.bbone_scalein = propgrp.scale_in
-                editbone.bbone_scaleout = propgrp.scale_out
+                editbone.bbone_scaleinx = propgrp.scale_in_x
+                editbone.bbone_scaleiny = propgrp.scale_in_y
+                editbone.bbone_scaleoutx = propgrp.scale_out_x
+                editbone.bbone_scaleouty = propgrp.scale_out_y
                 editbone.bbone_rollin = propgrp.roll_in * mirrParam
                 editbone.bbone_rollout = propgrp.roll_out * mirrParam
-                editbone.bbone_in = propgrp.ease_in
-                editbone.bbone_out = propgrp.ease_out
+                editbone.bbone_easein = propgrp.ease_in
+                editbone.bbone_easeout = propgrp.ease_out
 
         # parent head/tail handle #
         if propgrp.is_create_parent_of_handles:
@@ -759,7 +770,8 @@ class SetupBendyBoneAuto(bpy.types.Operator):
         for drvinf in infos:
             self._initDriverBase(obj, 'pose.bones["' + drvinf.driver_target_nm + '"].bbone_curve' + drvinf.inout_type + 'x', drvinf, "LOC_X")
             self._initDriverBase(obj, 'pose.bones["' + drvinf.driver_target_nm + '"].bbone_curve' + drvinf.inout_type + 'y', drvinf, "LOC_Y")
-            self._initDriverBase(obj, 'pose.bones["' + drvinf.driver_target_nm + '"].bbone_scale' + drvinf.inout_type, drvinf, "SCALE_Y")
+            self._initDriverBase(obj, 'pose.bones["' + drvinf.driver_target_nm + '"].bbone_scale' + drvinf.inout_type + 'x', drvinf, "SCALE_X")
+            self._initDriverBase(obj, 'pose.bones["' + drvinf.driver_target_nm + '"].bbone_scale' + drvinf.inout_type + 'y', drvinf, "SCALE_Y")
             self._initDriverBase(obj, 'pose.bones["' + drvinf.driver_target_nm + '"].bbone_roll' + drvinf.inout_type, drvinf, "ROT_Z").expression = "-var"
 
     def _initDriverBase(self, obj, data_path, drvinf, transType):
@@ -787,11 +799,8 @@ class SetupBendyBoneAuto(bpy.types.Operator):
 
             bones = obj.pose.bones
             bone = bones[names[0]]
-            bone_h = bones[names[1]]
+            # bone_h = bones[names[1]]
             bone_t = bones[names[2]]
-            bone.use_bbone_custom_handles = True
-            bone.bbone_custom_handle_start = bone_h
-            bone.bbone_custom_handle_end = bone_t
 
             if _CONSTRAINTS_NAME_STRETCH_TO in bone.constraints.keys():
                 const = bone.constraints[_CONSTRAINTS_NAME_STRETCH_TO]
@@ -878,7 +887,7 @@ class SetupBendyBoneAuto(bpy.types.Operator):
 
         # Set Copy Transform constraints #
         bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-        context.scene.objects.active = self._init_Armature
+        context.view_layer.objects.active = self._init_Armature
         bpy.ops.object.mode_set(mode='POSE', toggle=False)
         posebones = context.active_object.pose.bones
         for transmitter_nm in parentsDic.keys():
@@ -922,8 +931,10 @@ class SetupBendyBoneAuto(bpy.types.Operator):
             col.prop(propgrp, "curve_out_x")
             col.prop(propgrp, "curve_in_y")
             col.prop(propgrp, "curve_out_y")
-            col.prop(propgrp, "scale_in")
-            col.prop(propgrp, "scale_out")
+            col.prop(propgrp, "scale_in_x")
+            col.prop(propgrp, "scale_in_y")
+            col.prop(propgrp, "scale_out_x")
+            col.prop(propgrp, "scale_out_y")
             col.prop(propgrp, "roll_in")
             col.prop(propgrp, "roll_out")
             col.prop(propgrp, "ease_in")
@@ -946,8 +957,10 @@ class TransformBendyBoneForPose(bpy.types.Operator):
         propgrp.curve_out_x = pbone.bbone_curveoutx
         propgrp.curve_in_y = pbone.bbone_curveiny
         propgrp.curve_out_y = pbone.bbone_curveouty
-        propgrp.scale_in = pbone.bbone_scalein
-        propgrp.scale_out = pbone.bbone_scaleout
+        propgrp.scale_in_x = pbone.bbone_scaleinx
+        propgrp.scale_in_y = pbone.bbone_scaleiny
+        propgrp.scale_out_x = pbone.bbone_scaleoutx
+        propgrp.scale_out_y = pbone.bbone_scaleouty
         propgrp.roll_in = pbone.bbone_rollin
         propgrp.roll_out = pbone.bbone_rollout
 
@@ -1002,8 +1015,10 @@ class TransformBendyBoneForPose(bpy.types.Operator):
             pbone.bbone_curveoutx = propgrp.curve_out_x * mirrParam
             pbone.bbone_curveiny = propgrp.curve_in_y
             pbone.bbone_curveouty = propgrp.curve_out_y
-            pbone.bbone_scalein = propgrp.scale_in
-            pbone.bbone_scaleout = propgrp.scale_out
+            pbone.bbone_scaleinx = propgrp.scale_in_x
+            pbone.bbone_scaleiny = propgrp.scale_in_y
+            pbone.bbone_scaleoutx = propgrp.scale_out_x
+            pbone.bbone_scaleouty = propgrp.scale_out_y
             pbone.bbone_rollin = propgrp.roll_in * mirrParam
             pbone.bbone_rollout = propgrp.roll_out * mirrParam
 
@@ -1032,8 +1047,10 @@ class TransformBendyBoneForPose(bpy.types.Operator):
         col.prop(propgrp, "curve_out_x")
         col.prop(propgrp, "curve_in_y")
         col.prop(propgrp, "curve_out_y")
-        col.prop(propgrp, "scale_in")
-        col.prop(propgrp, "scale_out")
+        col.prop(propgrp, "scale_in_x")
+        col.prop(propgrp, "scale_in_y")
+        col.prop(propgrp, "scale_out_x")
+        col.prop(propgrp, "scale_out_y")
         col.prop(propgrp, "roll_in")
         col.prop(propgrp, "roll_out")
         col.prop(propgrp, "is_insert_keyframes", text="Insert keyframes", icon="REC", toggle=True)
@@ -1409,8 +1426,8 @@ class SetupBendyBoneAutoUIForPose(bpy.types.Panel):
         row3.template_list("RENAMEBONESLIST_UL_items", "", propgrp, "rename_bones_grp", propgrp, "rename_bones_grp_idx", rows=3)
 
         col_r = row2.column(align=True)
-        col_r.operator("uiler.addrenamebonesbyorderatbendybonesetupauto", text="", icon="ZOOMIN")
-        col_r.operator("uiler.removerenamebonesbyorderatbendybonesetupauto", text="", icon="ZOOMOUT")
+        col_r.operator("uiler.addrenamebonesbyorderatbendybonesetupauto", text="", icon="ADD")
+        col_r.operator("uiler.removerenamebonesbyorderatbendybonesetupauto", text="", icon="REMOVE")
         col_r.row(align=True).operator("uiler.refreshrenamebonesbyorderatbendybonesetupauto", text="", icon="FILE_REFRESH")
         col_r.separator()
         col_r.operator("uiler.uprenamebonesbyorderatbendybonesetupauto", icon='TRIA_UP', text="")
