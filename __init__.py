@@ -150,6 +150,8 @@ class SetupBendyBoneProperties(bpy.types.PropertyGroup):
     roll_out: bpy.props.FloatProperty(name="roll_out", description="Roll offset for the end of the B-Bone, adjusts twist", default=0.0, step=1.0, subtype="ANGLE", precision=5)
     ease_in: bpy.props.FloatProperty(name="ease_in", description="Length of first Bezier Handle (for B-Bones only)", default=1.0, step=0.01, min=0.0, max=2.0, soft_min=0.0, soft_max=2.0, subtype="NONE", precision=5)
     ease_out: bpy.props.FloatProperty(name="ease_out", description="Length of second Bezier Handle (for B-Bones only)", default=1.0, step=0.01, min=0.0, max=2.0, soft_min=0.0, soft_max=2.0, subtype="NONE", precision=5)
+    ease_in_pose: bpy.props.FloatProperty(name="ease_in", description="Length of first Bezier Handle (for B-Bones only)", default=0.0, step=0.01, min=0.0, max=2.0, soft_min=0.0, soft_max=2.0, subtype="NONE", precision=5)
+    ease_out_pose: bpy.props.FloatProperty(name="ease_out", description="Length of second Bezier Handle (for B-Bones only)", default=0.0, step=0.01, min=0.0, max=2.0, soft_min=0.0, soft_max=2.0, subtype="NONE", precision=5)
 
     # Bendy bone properties(posebone)
     constraints_bulge: bpy.props.FloatProperty(name="constraints_bulge", description='"Stretch to" constraints volume value.volume="1.0":If bbone squashed,inflate/"0.0":not inflate', default=0.0, step=0.1, subtype="NONE")
@@ -507,6 +509,7 @@ class SetupBendyBoneAuto(bpy.types.Operator):
 
         # initialize driver handle target armature
         self._init_Armature = context.active_object
+        self._init_Armature.data.display_type = "BBONE"
         if propgrp.is_add_driver_handle:
 
             if propgrp.add_driver_type == _ADD_DRIVER_TYPE_SELF:
@@ -522,7 +525,7 @@ class SetupBendyBoneAuto(bpy.types.Operator):
                 if not self._new_Armature:
                     armDt = bpy.data.armatures.new(propgrp.new_name_for_driver_target)
                     newObj = bpy.data.objects.new(propgrp.new_name_for_driver_target, armDt)
-                    context.scene.objects.link(newObj)
+                    context.scene.collection.objects.link(newObj)
 
                     self._new_Armature = newObj
 
@@ -819,7 +822,7 @@ class SetupBendyBoneAuto(bpy.types.Operator):
 
         if propgrp.add_driver_type != _ADD_DRIVER_TYPE_SELF:
             bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-            context.scene.objects.active = self._drv_target_Armature
+            context.view_layer.objects.active = self._drv_target_Armature
             bpy.ops.object.mode_set(mode='EDIT', toggle=False)
 
         obj = context.active_object
@@ -908,7 +911,7 @@ class SetupBendyBoneAuto(bpy.types.Operator):
         # back to init Armature Object
         if propgrp.add_driver_type != _ADD_DRIVER_TYPE_SELF:
             bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-            context.scene.objects.active = self._init_Armature
+            context.view_layer.objects.active = self._init_Armature
             bpy.ops.object.mode_set(mode='EDIT', toggle=False)
 
     def draw(self, context):
@@ -963,6 +966,8 @@ class TransformBendyBoneForPose(bpy.types.Operator):
         propgrp.scale_out_y = pbone.bbone_scaleouty
         propgrp.roll_in = pbone.bbone_rollin
         propgrp.roll_out = pbone.bbone_rollout
+        propgrp.ease_in_pose = pbone.bbone_easein
+        propgrp.ease_out_pose = pbone.bbone_easeout
 
     def invoke(self, context, event):
 
@@ -1021,6 +1026,8 @@ class TransformBendyBoneForPose(bpy.types.Operator):
             pbone.bbone_scaleouty = propgrp.scale_out_y
             pbone.bbone_rollin = propgrp.roll_in * mirrParam
             pbone.bbone_rollout = propgrp.roll_out * mirrParam
+            pbone.bbone_easein = propgrp.ease_in_pose
+            pbone.bbone_easeout = propgrp.ease_out_pose
 
             if propgrp.is_insert_keyframes:
 
@@ -1028,10 +1035,14 @@ class TransformBendyBoneForPose(bpy.types.Operator):
                 self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_curveiny', pbone.bbone_curveiny)
                 self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_curveoutx', pbone.bbone_curveoutx)
                 self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_curveouty', pbone.bbone_curveouty)
-                self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_scalein', pbone.bbone_scalein)
-                self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_scaleout', pbone.bbone_scaleout)
+                self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_scaleinx', pbone.bbone_scaleinx)
+                self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_scaleiny', pbone.bbone_scaleiny)
+                self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_scaleoutx', pbone.bbone_scaleoutx)
+                self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_scaleouty', pbone.bbone_scaleouty)
                 self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_rollin', pbone.bbone_rollin)
                 self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_rollout', pbone.bbone_rollout)
+                self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_easein', pbone.bbone_easein)
+                self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_easeout', pbone.bbone_easeout)
 
         return {'FINISHED'}
 
@@ -1053,12 +1064,14 @@ class TransformBendyBoneForPose(bpy.types.Operator):
         col.prop(propgrp, "scale_out_y")
         col.prop(propgrp, "roll_in")
         col.prop(propgrp, "roll_out")
+        col.prop(propgrp, "ease_in_pose")
+        col.prop(propgrp, "ease_out_pose")
         col.prop(propgrp, "is_insert_keyframes", text="Insert keyframes", icon="REC", toggle=True)
         col.operator("uiler.bendyboneposeconfirmoperation", text="Confirm", icon="FILE_TICK")
 
     def _insertKeyFrame(self, frm, act, data_path, value):
 
-        fc = act.fcurves.find(data_path, 0)
+        fc = act.fcurves.find(data_path, index=0)
         if not fc:
             fc = act.fcurves.new(data_path)
         fc.keyframe_points.insert(frm, value)
@@ -1312,7 +1325,7 @@ class SetupBendyBoneAutoUIForEdit(bpy.types.Panel):
     bl_idname = "UILER_SETUP_BENDY_BONE_AUTO_FOR_EDIT_UI_PT_layout"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = "Setup BBone"
+    bl_category = "SBB"
     bl_context = "armature_edit"
 
     @classmethod
@@ -1383,7 +1396,7 @@ class SetupBendyBoneAutoUIForPose(bpy.types.Panel):
     bl_idname = "UILER_SETUP_BENDY_BONE_AUTO_FOR_POSE_UI_PT_layout"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = "Setup BBone"
+    bl_category = "SBB"
     bl_context = "posemode"
 
     @classmethod
