@@ -507,14 +507,20 @@ class SetupBendyBoneAuto(bpy.types.Operator):
         if propgrp.is_use_active_value:
             self._default2Active(propgrp, context.active_bone)
 
+        return self.execute(context)
+
+    def initTargetObject(self, context):
+
+        propgrp = context.window_manager.uil_setup_bendy_bone_auto_propgrp
+
         # initialize driver handle target armature
-        self._init_Armature = context.active_object
-        self._init_Armature.data.display_type = "BBONE"
+        self._init_Armature = context.active_object.name
+        bpy.data.objects[self._init_Armature].data.display_type = "BBONE"
         if propgrp.is_add_driver_handle:
 
             if propgrp.add_driver_type == _ADD_DRIVER_TYPE_SELF:
 
-                self._drv_target_Armature = context.active_object
+                self._drv_target_Armature = context.active_object.name
 
             elif propgrp.add_driver_type == _ADD_DRIVER_TYPE_NEW_ARMATRUE:
 
@@ -522,12 +528,10 @@ class SetupBendyBoneAuto(bpy.types.Operator):
                     self.report({'ERROR_INVALID_INPUT'}, "Input new armature name.")
                     return {'CANCELLED'}
 
-                if not self._new_Armature:
-                    armDt = bpy.data.armatures.new(propgrp.new_name_for_driver_target)
-                    newObj = bpy.data.objects.new(propgrp.new_name_for_driver_target, armDt)
-                    context.scene.collection.objects.link(newObj)
-
-                    self._new_Armature = newObj
+                armDt = bpy.data.armatures.new(propgrp.new_name_for_driver_target)
+                newObj = bpy.data.objects.new(propgrp.new_name_for_driver_target, armDt)
+                context.scene.collection.objects.link(newObj)
+                self._new_Armature = newObj.name
 
                 self._drv_target_Armature = self._new_Armature
 
@@ -542,20 +546,20 @@ class SetupBendyBoneAuto(bpy.types.Operator):
                     self.report({'ERROR_INVALID_INPUT'}, "Input Armature.")
                     return {'CANCELLED'}
 
-                if target_obj == self._init_Armature:
+                if target_obj == bpy.data.objects[self._init_Armature]:
                     self.report({'ERROR_INVALID_INPUT'}, "Input another Armature.")
                     return {'CANCELLED'}
 
-                self._drv_target_Armature = target_obj
+                self._drv_target_Armature = target_obj.name
 
-            self._drv_target_Armature.data.display_type = "BBONE"
-
-        return self.execute(context)
+            bpy.data.objects[self._drv_target_Armature].data.display_type = "BBONE"
 
     def execute(self, context):
 
+        self.initTargetObject(context)
+
         # Initialize for loop call #
-        self._clearMyConstraints()
+        # self._clearMyConstraints()
         self._base_vec_map = {}
 
         obj = context.active_object
@@ -787,7 +791,7 @@ class SetupBendyBoneAuto(bpy.types.Operator):
         v = driver.variables.new()
         v.name = "var"
         v.type = "TRANSFORMS"
-        v.targets[0].id = self._drv_target_Armature
+        v.targets[0].id = bpy.data.objects[self._drv_target_Armature]
         v.targets[0].bone_target = drvinf.name
         v.targets[0].transform_type = transType
         v.targets[0].transform_space = "TRANSFORM_SPACE"
@@ -822,7 +826,7 @@ class SetupBendyBoneAuto(bpy.types.Operator):
 
         if propgrp.add_driver_type != _ADD_DRIVER_TYPE_SELF:
             bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-            context.view_layer.objects.active = self._drv_target_Armature
+            context.view_layer.objects.active = bpy.data.objects[self._drv_target_Armature]
             bpy.ops.object.mode_set(mode='EDIT', toggle=False)
 
         obj = context.active_object
@@ -890,7 +894,7 @@ class SetupBendyBoneAuto(bpy.types.Operator):
 
         # Set Copy Transform constraints #
         bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-        context.view_layer.objects.active = self._init_Armature
+        context.view_layer.objects.active = bpy.data.objects[self._init_Armature]
         bpy.ops.object.mode_set(mode='POSE', toggle=False)
         posebones = context.active_object.pose.bones
         for transmitter_nm in parentsDic.keys():
@@ -911,7 +915,7 @@ class SetupBendyBoneAuto(bpy.types.Operator):
         # back to init Armature Object
         if propgrp.add_driver_type != _ADD_DRIVER_TYPE_SELF:
             bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-            context.view_layer.objects.active = self._init_Armature
+            context.view_layer.objects.active = bpy.data.objects[self._init_Armature]
             bpy.ops.object.mode_set(mode='EDIT', toggle=False)
 
     def draw(self, context):
