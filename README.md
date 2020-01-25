@@ -1,6 +1,11 @@
 BlenderのBendy Boneを自動でセットアップするアドオンです。手作業で行うとかなり大変な作業がこのアドオンを使うと簡単にできます。<br>
 Setting up manually a lot of bendy bones is hard work, but you can do it easily with this add-on.
 
+|Version|DL|Blender|
+|---|---|---|
+|0.1|https://github.com/Uiler/bendybone_setup_auto/releases/tag/v0.1|2.7.9|
+|0.2|https://github.com/Uiler/bendybone_setup_auto/releases/tag/v0.2|2.81|
+
 機能は以下の通りです。<br>
 My add-on have features in below:
 
