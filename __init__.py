@@ -6,8 +6,8 @@ from . import common
 bl_info = {
     "name": "Bendy Bone Setup Auto",
     "author": "Uiler",
-    "version": (0, 2),
-    "blender": (2, 81, 0),
+    "version": (0, 3),
+    "blender": (3, 0, 0),
     "location": "Rigging",
     "description": "Setup automatically bendy bone.",
     "warning": "",
@@ -140,12 +140,14 @@ class SetupBendyBoneProperties(bpy.types.PropertyGroup):
     segments: bpy.props.IntProperty(name="segments", description="Bendy bone segments", default=16, min=1, max=32, soft_min=1, soft_max=32, step=1, subtype='NONE')
     curve_in_x: bpy.props.FloatProperty(name="curve_in_x", description="X-axis handle offset for start of the B-Bone's curve, adjusts curvature", default=0.0, step=0.01, subtype="NONE", precision=5)
     curve_out_x: bpy.props.FloatProperty(name="curve_out_x", description="X-axis handle offset for end of the B-Bone's curve, adjusts curvature", default=0.0, step=0.01, subtype="NONE", precision=5)
-    curve_in_y: bpy.props.FloatProperty(name="curve_in_y", description="Y-axis handle offset for start of the B-Bone's curve, adjusts curvature", default=0.0, step=0.01, subtype="NONE", precision=5)
-    curve_out_y: bpy.props.FloatProperty(name="curve_out_y", description="Y-axis handle offset for end of the B-Bone's curve, adjusts curvature", default=0.0, step=0.01, subtype="NONE", precision=5)
+    curve_in_z: bpy.props.FloatProperty(name="curve_in_z", description="Z-axis handle offset for start of the B-Bone's curve, adjusts curvature", default=0.0, step=0.01, subtype="NONE", precision=5)
+    curve_out_z: bpy.props.FloatProperty(name="curve_out_z", description="Z-axis handle offset for end of the B-Bone's curve, adjusts curvature", default=0.0, step=0.01, subtype="NONE", precision=5)
     scale_in_x: bpy.props.FloatProperty(name="scale_in_x", description="Scale factor for start of the B-Bone, adjusts thickness (for tapering effects)", default=1.0, step=0.01, subtype="NONE", precision=5)
     scale_in_y: bpy.props.FloatProperty(name="scale_in_y", description="Scale factor for start of the B-Bone, adjusts thickness (for tapering effects)", default=1.0, step=0.01, subtype="NONE", precision=5)
+    scale_in_z: bpy.props.FloatProperty(name="scale_in_z", description="Scale factor for start of the B-Bone, adjusts thickness (for tapering effects)", default=1.0, step=0.01, subtype="NONE", precision=5)
     scale_out_x: bpy.props.FloatProperty(name="scale_out_x", description="Scale factor for end of the B-Bone, adjusts thickness (for tapering effects)", default=1.0, step=0.01, subtype="NONE", precision=5)
     scale_out_y: bpy.props.FloatProperty(name="scale_out_y", description="Scale factor for end of the B-Bone, adjusts thickness (for tapering effects)", default=1.0, step=0.01, subtype="NONE", precision=5)
+    scale_out_z: bpy.props.FloatProperty(name="scale_out_z", description="Scale factor for end of the B-Bone, adjusts thickness (for tapering effects)", default=1.0, step=0.01, subtype="NONE", precision=5)
     roll_in: bpy.props.FloatProperty(name="roll_in", description="Roll offset for the start of the B-Bone, adjusts twist", default=0.0, step=1.0, subtype="ANGLE", precision=5)
     roll_out: bpy.props.FloatProperty(name="roll_out", description="Roll offset for the end of the B-Bone, adjusts twist", default=0.0, step=1.0, subtype="ANGLE", precision=5)
     ease_in: bpy.props.FloatProperty(name="ease_in", description="Length of first Bezier Handle (for B-Bones only)", default=1.0, step=0.01, min=0.0, max=2.0, soft_min=0.0, soft_max=2.0, subtype="NONE", precision=5)
@@ -331,12 +333,14 @@ class SetupBendyBoneAuto(bpy.types.Operator):
         propgrp.segments = editbone.bbone_segments
         propgrp.curve_in_x = editbone.bbone_curveinx
         propgrp.curve_out_x = editbone.bbone_curveoutx
-        propgrp.curve_in_y = editbone.bbone_curveiny
-        propgrp.curve_out_y = editbone.bbone_curveouty
-        propgrp.scale_in_x = editbone.bbone_scaleinx
-        propgrp.scale_in_y = editbone.bbone_scaleiny
-        propgrp.scale_out_x = editbone.bbone_scaleoutx
-        propgrp.scale_out_y = editbone.bbone_scaleouty
+        propgrp.curve_in_z = editbone.bbone_curveinz
+        propgrp.curve_out_z = editbone.bbone_curveoutz
+        propgrp.scale_in_x = editbone.bbone_scalein[0]
+        propgrp.scale_in_y = editbone.bbone_scalein[1]
+        propgrp.scale_in_z = editbone.bbone_scalein[2]
+        propgrp.scale_out_x = editbone.bbone_scaleout[0]
+        propgrp.scale_out_y = editbone.bbone_scaleout[1]
+        propgrp.scale_out_z = editbone.bbone_scaleout[2]
         propgrp.roll_in = editbone.bbone_rollin
         propgrp.roll_out = editbone.bbone_rollout
         propgrp.ease_in = editbone.bbone_easein
@@ -740,12 +744,14 @@ class SetupBendyBoneAuto(bpy.types.Operator):
                 editbone.bbone_segments = propgrp.segments
                 editbone.bbone_curveinx = propgrp.curve_in_x * mirrParam
                 editbone.bbone_curveoutx = propgrp.curve_out_x * mirrParam
-                editbone.bbone_curveiny = propgrp.curve_in_y
-                editbone.bbone_curveouty = propgrp.curve_out_y
-                editbone.bbone_scaleinx = propgrp.scale_in_x
-                editbone.bbone_scaleiny = propgrp.scale_in_y
-                editbone.bbone_scaleoutx = propgrp.scale_out_x
-                editbone.bbone_scaleouty = propgrp.scale_out_y
+                editbone.bbone_curveinz = propgrp.curve_in_z
+                editbone.bbone_curveoutz = propgrp.curve_out_z
+                editbone.bbone_scalein[0] = propgrp.scale_in_x
+                editbone.bbone_scalein[1] = propgrp.scale_in_y
+                editbone.bbone_scalein[2] = propgrp.scale_in_z
+                editbone.bbone_scaleout[0] = propgrp.scale_out_x
+                editbone.bbone_scaleout[1] = propgrp.scale_out_y
+                editbone.bbone_scaleout[2] = propgrp.scale_out_z
                 editbone.bbone_rollin = propgrp.roll_in * mirrParam
                 editbone.bbone_rollout = propgrp.roll_out * mirrParam
                 editbone.bbone_easein = propgrp.ease_in
@@ -776,15 +782,16 @@ class SetupBendyBoneAuto(bpy.types.Operator):
 
         for drvinf in infos:
             self._initDriverBase(obj, 'pose.bones["' + drvinf.driver_target_nm + '"].bbone_curve' + drvinf.inout_type + 'x', drvinf, "LOC_X")
-            self._initDriverBase(obj, 'pose.bones["' + drvinf.driver_target_nm + '"].bbone_curve' + drvinf.inout_type + 'y', drvinf, "LOC_Y")
-            self._initDriverBase(obj, 'pose.bones["' + drvinf.driver_target_nm + '"].bbone_scale' + drvinf.inout_type + 'x', drvinf, "SCALE_X")
-            self._initDriverBase(obj, 'pose.bones["' + drvinf.driver_target_nm + '"].bbone_scale' + drvinf.inout_type + 'y', drvinf, "SCALE_Y")
+            self._initDriverBase(obj, 'pose.bones["' + drvinf.driver_target_nm + '"].bbone_curve' + drvinf.inout_type + 'z', drvinf, "LOC_Y")
+            self._initDriverBase(obj, 'pose.bones["' + drvinf.driver_target_nm + '"].bbone_scale' + drvinf.inout_type, drvinf, "SCALE_X", 0)
+            self._initDriverBase(obj, 'pose.bones["' + drvinf.driver_target_nm + '"].bbone_scale' + drvinf.inout_type, drvinf, "SCALE_Y", 1)
+            self._initDriverBase(obj, 'pose.bones["' + drvinf.driver_target_nm + '"].bbone_scale' + drvinf.inout_type, drvinf, "SCALE_Z", 2)
             self._initDriverBase(obj, 'pose.bones["' + drvinf.driver_target_nm + '"].bbone_roll' + drvinf.inout_type, drvinf, "ROT_Z").expression = "-var"
 
-    def _initDriverBase(self, obj, data_path, drvinf, transType):
+    def _initDriverBase(self, obj, data_path, drvinf, transType, data_idx=-1):
 
-        obj.driver_remove(data_path, -1)
-        driver = obj.driver_add(data_path, -1).driver
+        obj.driver_remove(data_path, data_idx)
+        driver = obj.driver_add(data_path, data_idx).driver
         driver.type = "SCRIPTED"
         driver.expression = "var"
 
@@ -936,12 +943,14 @@ class SetupBendyBoneAuto(bpy.types.Operator):
             col.prop(propgrp, "segments")
             col.prop(propgrp, "curve_in_x")
             col.prop(propgrp, "curve_out_x")
-            col.prop(propgrp, "curve_in_y")
-            col.prop(propgrp, "curve_out_y")
+            col.prop(propgrp, "curve_in_z")
+            col.prop(propgrp, "curve_out_z")
             col.prop(propgrp, "scale_in_x")
             col.prop(propgrp, "scale_in_y")
+            col.prop(propgrp, "scale_in_z")
             col.prop(propgrp, "scale_out_x")
             col.prop(propgrp, "scale_out_y")
+            col.prop(propgrp, "scale_out_z")
             col.prop(propgrp, "roll_in")
             col.prop(propgrp, "roll_out")
             col.prop(propgrp, "ease_in")
@@ -962,12 +971,14 @@ class TransformBendyBoneForPose(bpy.types.Operator):
 
         propgrp.curve_in_x = pbone.bbone_curveinx
         propgrp.curve_out_x = pbone.bbone_curveoutx
-        propgrp.curve_in_y = pbone.bbone_curveiny
-        propgrp.curve_out_y = pbone.bbone_curveouty
-        propgrp.scale_in_x = pbone.bbone_scaleinx
-        propgrp.scale_in_y = pbone.bbone_scaleiny
-        propgrp.scale_out_x = pbone.bbone_scaleoutx
-        propgrp.scale_out_y = pbone.bbone_scaleouty
+        propgrp.curve_in_z = pbone.bbone_curveinz
+        propgrp.curve_out_z = pbone.bbone_curveoutz
+        propgrp.scale_in_x = pbone.bbone_scalein[0]
+        propgrp.scale_in_y = pbone.bbone_scalein[1]
+        propgrp.scale_in_z = pbone.bbone_scalein[2]
+        propgrp.scale_out_x = pbone.bbone_scaleout[0]
+        propgrp.scale_out_y = pbone.bbone_scaleout[1]
+        propgrp.scale_out_z = pbone.bbone_scaleout[2]
         propgrp.roll_in = pbone.bbone_rollin
         propgrp.roll_out = pbone.bbone_rollout
         propgrp.ease_in_pose = pbone.bbone_easein
@@ -1022,12 +1033,14 @@ class TransformBendyBoneForPose(bpy.types.Operator):
                 mirrParam = -1.0
             pbone.bbone_curveinx = propgrp.curve_in_x * mirrParam
             pbone.bbone_curveoutx = propgrp.curve_out_x * mirrParam
-            pbone.bbone_curveiny = propgrp.curve_in_y
-            pbone.bbone_curveouty = propgrp.curve_out_y
-            pbone.bbone_scaleinx = propgrp.scale_in_x
-            pbone.bbone_scaleiny = propgrp.scale_in_y
-            pbone.bbone_scaleoutx = propgrp.scale_out_x
-            pbone.bbone_scaleouty = propgrp.scale_out_y
+            pbone.bbone_curveinz = propgrp.curve_in_z
+            pbone.bbone_curveoutz = propgrp.curve_out_z
+            pbone.bbone_scalein[0] = propgrp.scale_in_x
+            pbone.bbone_scalein[1] = propgrp.scale_in_y
+            pbone.bbone_scalein[2] = propgrp.scale_in_z
+            pbone.bbone_scaleout[0] = propgrp.scale_out_x
+            pbone.bbone_scaleout[1] = propgrp.scale_out_y
+            pbone.bbone_scaleout[2] = propgrp.scale_out_z
             pbone.bbone_rollin = propgrp.roll_in * mirrParam
             pbone.bbone_rollout = propgrp.roll_out * mirrParam
             pbone.bbone_easein = propgrp.ease_in_pose
@@ -1036,13 +1049,15 @@ class TransformBendyBoneForPose(bpy.types.Operator):
             if propgrp.is_insert_keyframes:
 
                 self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_curveinx', pbone.bbone_curveinx)
-                self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_curveiny', pbone.bbone_curveiny)
+                self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_curveinz', pbone.bbone_curveinz)
                 self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_curveoutx', pbone.bbone_curveoutx)
-                self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_curveouty', pbone.bbone_curveouty)
-                self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_scaleinx', pbone.bbone_scaleinx)
-                self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_scaleiny', pbone.bbone_scaleiny)
-                self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_scaleoutx', pbone.bbone_scaleoutx)
-                self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_scaleouty', pbone.bbone_scaleouty)
+                self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_curveoutz', pbone.bbone_curveoutz)
+                self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_scalein[0]', pbone.bbone_scalein[0])
+                self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_scalein[1]', pbone.bbone_scalein[1])
+                self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_scalein[2]', pbone.bbone_scalein[2])
+                self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_scaleout[0]', pbone.bbone_scaleout[0])
+                self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_scaleout[1]', pbone.bbone_scaleout[1])
+                self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_scaleout[2]', pbone.bbone_scaleout[2])
                 self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_rollin', pbone.bbone_rollin)
                 self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_rollout', pbone.bbone_rollout)
                 self._insertKeyFrame(frm, act, 'pose.bones["' + pbone.name + '"].bbone_easein', pbone.bbone_easein)
@@ -1060,12 +1075,14 @@ class TransformBendyBoneForPose(bpy.types.Operator):
         propgrp = context.window_manager.uil_setup_bendy_bone_auto_propgrp
         col.prop(propgrp, "curve_in_x")
         col.prop(propgrp, "curve_out_x")
-        col.prop(propgrp, "curve_in_y")
-        col.prop(propgrp, "curve_out_y")
+        col.prop(propgrp, "curve_in_z")
+        col.prop(propgrp, "curve_out_z")
         col.prop(propgrp, "scale_in_x")
         col.prop(propgrp, "scale_in_y")
+        col.prop(propgrp, "scale_in_z")
         col.prop(propgrp, "scale_out_x")
         col.prop(propgrp, "scale_out_y")
+        col.prop(propgrp, "scale_out_z")
         col.prop(propgrp, "roll_in")
         col.prop(propgrp, "roll_out")
         col.prop(propgrp, "ease_in_pose")
