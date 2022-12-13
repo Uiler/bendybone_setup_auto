@@ -5,6 +5,7 @@ Setting up manually a lot of bendy bones is hard work, but you can do it easily 
 |---|---|---|
 |0.1|https://github.com/Uiler/bendybone_setup_auto/releases/tag/v0.1|2.7.9|
 |0.2|https://github.com/Uiler/bendybone_setup_auto/releases/tag/v0.2|2.81|
+|0.3|https://github.com/Uiler/bendybone_setup_auto/releases/tag/v0.3|3.0+|
 
 機能は以下の通りです。<br>
 My add-on have features in below:
