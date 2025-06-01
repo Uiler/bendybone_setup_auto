@@ -223,45 +223,23 @@ def isEmptyStr(str):
 
 def isVisiblePoseBone(bone):
 
-    if not bone:
-        return False
-
-    data = bone.id_data.data
-
-    bLayers = []
-    bIdx = 0
-    for isLayer in bone.bone.layers:
-
-        if isLayer:
-            bLayers.append(bIdx)
-
-        bIdx = bIdx + 1
-
-    for bLayer in bLayers:
-
-        return data.layers[bLayer] and not bone.bone.hide
-
-    return False
-
+    return isVisibleBone(bone.bone)
 
 def isVisibleBone(bone):
 
     if not bone:
         return False
+    
+    if bone.hide:
+        return False
 
-    data = bone.id_data
+    arm = bone.id_data
+    bColls = bone.collections
+    if(not len(bColls)): # root bone collection
+        return True
 
-    bLayers = []
-    bIdx = 0
-    for isLayer in bone.layers:
-
-        if isLayer:
-            bLayers.append(bIdx)
-
-        bIdx = bIdx + 1
-
-    for bLayer in bLayers:
-
-        return data.layers[bLayer] and not bone.hide
+    for key, bColl in bColls.items():
+        if(bColl.is_visible_effectively):
+            return True
 
     return False

@@ -6,8 +6,8 @@ from . import common
 bl_info = {
     "name": "Bendy Bone Setup Auto",
     "author": "Uiler",
-    "version": (0, 3),
-    "blender": (3, 0, 0),
+    "version": (0, 4),
+    "blender": (4, 3, 0),
     "location": "Rigging",
     "description": "Setup automatically bendy bone.",
     "warning": "",
